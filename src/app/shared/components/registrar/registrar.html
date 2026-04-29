@@ -1,27 +1,55 @@
-<form class="flex flex-col gap-4">
+<form class="flex flex-col gap-4" [formGroup]="registerForm" (ngSubmit)="submit()">
     <div class="flex flex-col gap-2">
-        <label for="email" class="text-neutral-900 font-semibold">Nome</label>
-        <app-input-login type="text" [icon]="nameIcon" placeholder="Digite seu nome"></app-input-login>
+        <label for="register-name" class="text-neutral-900 font-semibold">Nome</label>
+        <app-input-login id="register-name" formControlName="name" type="text" [icon]="nameIcon" placeholder="Digite seu nome"></app-input-login>
+        @if (registerForm.controls.name.touched && registerForm.controls.name.hasError('required')) {
+            <p class="mt-1 text-xs text-red-500">Informe seu nome.</p>
+        }
+        @if (registerForm.controls.name.touched && registerForm.controls.name.hasError('minlength')) {
+            <p class="mt-1 text-xs text-red-500">Informe um nome com pelo menos 2 caracteres.</p>
+        }
     </div>
     <div class="flex flex-col gap-2">
-        <label for="email" class="text-neutral-900 font-semibold">Email</label>
-        <app-input-login type="email" [icon]="emailIcon" placeholder="Digite seu email"></app-input-login>
+        <label for="register-email" class="text-neutral-900 font-semibold">Email</label>
+        <app-input-login id="register-email" formControlName="email" type="email" [icon]="emailIcon" placeholder="Digite seu email"></app-input-login>
+        @if (registerForm.controls.email.touched && registerForm.controls.email.hasError('required')) {
+            <p class="mt-1 text-xs text-red-500">Informe seu email.</p>
+        }
+        @if (registerForm.controls.email.touched && registerForm.controls.email.hasError('email')) {
+            <p class="mt-1 text-xs text-red-500">Informe um email valido.</p>
+        }
     </div>
     <div class="flex flex-col gap-2">
-        <label for="password" class="text-neutral-900 font-semibold">Senha</label>
-        <app-input-login type="password" [icon]="passwordIcon" placeholder="Digite sua senha"></app-input-login>
+        <label for="register-password" class="text-neutral-900 font-semibold">Senha</label>
+        <app-input-login id="register-password" formControlName="password" type="password" [icon]="passwordIcon" placeholder="Digite sua senha"></app-input-login>
+        @if (registerForm.controls.password.touched && registerForm.controls.password.hasError('required')) {
+            <p class="mt-1 text-xs text-red-500">Informe sua senha.</p>
+        }
+        @if (registerForm.controls.password.touched && registerForm.controls.password.hasError('minlength')) {
+            <p class="mt-1 text-xs text-red-500">A senha precisa ter pelo menos 6 caracteres.</p>
+        }
     </div>
     <div class="flex flex-col gap-2">
-        <label for="confirmPassword" class="text-neutral-900 font-semibold">Confirmar Senha</label>
-        <app-input-login type="password" [icon]="lockIcon" placeholder="Confirme sua senha"></app-input-login>
+        <label for="register-confirm-password" class="text-neutral-900 font-semibold">Confirmar Senha</label>
+        <app-input-login id="register-confirm-password" formControlName="confirmPassword" type="password" [icon]="lockIcon" placeholder="Confirme sua senha"></app-input-login>
+        @if (registerForm.controls.confirmPassword.touched && registerForm.controls.confirmPassword.hasError('required')) {
+            <p class="mt-1 text-xs text-red-500">Confirme sua senha.</p>
+        }
+        @if (registerForm.controls.confirmPassword.touched && registerForm.hasError('passwordMismatch')) {
+            <p class="mt-1 text-xs text-red-500">As senhas nao conferem.</p>
+        }
     </div>
     <div>
         <label for="terms" class="flex items-center gap-2 text-sm text-neutral-600 font-semibold">
-            <input type="checkbox" id="terms" class="accent-primary-500">
+            <input type="checkbox" id="terms" formControlName="terms" class="accent-primary-500">
             Aceito os termos e condições
         </label>
+        @if (registerForm.controls.terms.touched && registerForm.controls.terms.invalid) {
+            <p class="mt-1 text-xs text-red-500">Voce precisa aceitar os termos e condicoes.</p>
+        }
     </div>
     <button
+        type="submit"
         class="bg-primary-500 hover:bg-primary-500/80 text-neutral-900 flex justify-center items-center gap-2 py-2 rounded-md cursor-pointer shadow-sm">
         <p class="text-xl font-lexend font-semibold">Cadastrar</p>
         <fa-icon [icon]="arrowIcon"></fa-icon>
