@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
-  faCalendarDays,
   faCalendarCheck,
+  faCalendarDays,
   faChartLine,
   faCheck,
   faChevronRight,
@@ -12,25 +12,12 @@ import {
   faMagnifyingGlass,
   faPlus,
 } from '@fortawesome/free-solid-svg-icons';
+import { finalize } from 'rxjs';
+import { DashboardSummary } from '../../core/models/dashboard.model';
+import { TaskPriority, TaskStatus } from '../../core/models/task.model';
+import { DashboardService } from '../../core/services/dashboard.service';
+import { TasksService } from '../../core/services/tasks.service';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
-
-type Priority = 'alta' | 'media' | 'baixa';
-
-interface StudyTask {
-  id: number;
-  title: string;
-  category: string;
-  deadline: string;
-  priority: Priority;
-  done: boolean;
-}
-
-interface FocusItem {
-  id: number;
-  title: string;
-  subtitle: string;
-  tone: 'amber' | 'cyan';
-}
 
 @Component({
   selector: 'app-dashboard',
@@ -41,85 +28,35 @@ interface FocusItem {
 })
 export class Dashboard {
   private readonly router = inject(Router);
+  private readonly dashboardService = inject(DashboardService);
+  private readonly tasksService = inject(TasksService);
 
-  readonly userName = signal('Lucas');
   readonly search = signal('');
+  readonly summary = signal<DashboardSummary | null>(null);
+  readonly isLoading = signal(true);
+  readonly isUpdatingTask = signal<string | null>(null);
+  readonly errorMessage = signal('');
 
-  readonly tasks = signal<StudyTask[]>([
-    {
-      id: 1,
-      title: 'Revisao de Calculo II - Integrais Triplas',
-      category: 'Engenharia',
-      deadline: 'Hoje, 18:00',
-      priority: 'alta',
-      done: false,
-    },
-    {
-      id: 2,
-      title: 'Entrega do Prototipo de UI/UX',
-      category: 'Design Digital',
-      deadline: 'Amanha, 23:59',
-      priority: 'alta',
-      done: false,
-    },
-    {
-      id: 3,
-      title: 'Leitura Capitulo 4: Etica e Sociedade',
-      category: 'Filosofia',
-      deadline: '24 Out',
-      priority: 'media',
-      done: false,
-    },
-    {
-      id: 4,
-      title: 'Exercicios de Estrutura de Dados',
-      category: 'Computacao',
-      deadline: '25 Out',
-      priority: 'media',
-      done: true,
-    },
-    {
-      id: 5,
-      title: 'Preparacao para o Seminario de Marketing',
-      category: 'Administracao',
-      deadline: '26 Out',
-      priority: 'baixa',
-      done: false,
-    },
-  ]);
-
-  readonly focusItems = signal<FocusItem[]>([
-    {
-      id: 1,
-      title: 'Flashcards: Algoritmos',
-      subtitle: 'Sessao de 15 min recomendada',
-      tone: 'amber',
-    },
-    {
-      id: 2,
-      title: 'Leitura: IHC Moderno',
-      subtitle: 'Meta: 10 paginas restantes',
-      tone: 'cyan',
-    },
-  ]);
-
+  readonly userName = computed(() => this.summary()?.userName ?? 'Estudante');
   readonly filteredTasks = computed(() => {
     const term = this.search().trim().toLowerCase();
+    const tasks = this.summary()?.tasks ?? [];
+
     if (!term) {
-      return this.tasks();
+      return tasks;
     }
 
-    return this.tasks().filter((task) => {
+    return tasks.filter((task) => {
       return (
         task.title.toLowerCase().includes(term) ||
-        task.category.toLowerCase().includes(term) ||
-        task.deadline.toLowerCase().includes(term)
+        task.course.toLowerCase().includes(term) ||
+        task.deadlineLabel.toLowerCase().includes(term)
       );
     });
   });
-
-  readonly pendingTasks = computed(() => this.tasks().filter((task) => !task.done));
-  readonly lateTasks = computed(() => this.tasks().filter((task) => task.priority === 'alta' && !task.done));
+  readonly pendingTasks = computed(() => (this.summary()?.tasks ?? []).filter((task) => task.status !== 'completed'));
+  readonly lateTasks = computed(() => this.summary()?.stats.overdueTasks ?? 0);
+  readonly focusItems = computed(() => this.summary()?.focusItems ?? []);
 
   readonly searchIcon = faMagnifyingGlass;
   readonly plusIcon = faPlus;
@@ -131,6 +68,10 @@ export class Dashboard {
   readonly arrowIcon = faChevronRight;
   readonly checkIcon = faCheck;
 
+  constructor() {
+    this.loadSummary();
+  }
+
   updateSearch(value: string): void {
     this.search.set(value ?? '');
   }
@@ -139,20 +80,27 @@ export class Dashboard {
     void this.router.navigate(['/tasks']);
   }
 
-  toggleTask(taskId: number): void {
-    this.tasks.update((current) =>
-      current.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              done: !task.done,
-            }
-          : task,
-      ),
-    );
+  toggleTask(taskId: string): void {
+    const task = (this.summary()?.tasks ?? []).find((item) => item.id === taskId);
+    if (!task || this.isUpdatingTask()) {
+      return;
+    }
+
+    const nextStatus: TaskStatus = task.status === 'completed' ? 'pending' : 'completed';
+    this.isUpdatingTask.set(taskId);
+
+    this.tasksService
+      .updateStatus(taskId, nextStatus)
+      .pipe(finalize(() => this.isUpdatingTask.set(null)))
+      .subscribe({
+        next: () => this.loadSummary(),
+        error: () => {
+          this.errorMessage.set('Nao foi possivel atualizar a tarefa.');
+        },
+      });
   }
 
-  priorityClass(priority: Priority): string {
+  priorityClass(priority: TaskPriority): string {
     if (priority === 'alta') {
       return 'bg-red-500 text-white';
     }
@@ -162,10 +110,27 @@ export class Dashboard {
     return 'bg-emerald-200 text-emerald-800';
   }
 
-  focusClass(tone: FocusItem['tone']): string {
+  focusClass(tone: 'amber' | 'cyan'): string {
     if (tone === 'amber') {
       return 'border-amber-100 bg-amber-50';
     }
     return 'border-cyan-100 bg-cyan-50';
+  }
+
+  private loadSummary(): void {
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    this.dashboardService
+      .getSummary()
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (summary) => {
+          this.summary.set(summary);
+        },
+        error: () => {
+          this.errorMessage.set('Nao foi possivel carregar o dashboard.');
+        },
+      });
   }
 }

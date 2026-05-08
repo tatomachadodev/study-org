@@ -12,10 +12,14 @@
         </button>
       </div>
 
+      @if (errorMessage()) {
+        <p class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{ errorMessage() }}</p>
+      }
+
       <div class="rounded-2xl border border-neutral-200 bg-white">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 px-4 py-3">
           <div class="flex items-center gap-2">
-            <h2 class="text-2xl font-semibold text-neutral-800">Marco de 2024</h2>
+            <h2 class="text-2xl font-semibold text-neutral-800">{{ monthLabel() }}</h2>
             <button type="button" class="rounded-md border border-neutral-200 px-2 py-1 text-sm">Hoje</button>
           </div>
           <div class="flex items-center gap-3 text-xs text-neutral-500">
@@ -25,26 +29,28 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-7 text-center text-xs font-semibold text-neutral-400 border-b border-neutral-200">
+        <div class="grid grid-cols-7 border-b border-neutral-200 text-center text-xs font-semibold text-neutral-400">
           <span class="py-2">DOM</span><span class="py-2">SEG</span><span class="py-2">TER</span>
           <span class="py-2">QUA</span><span class="py-2">QUI</span><span class="py-2">SEX</span><span class="py-2">SAB</span>
         </div>
 
-        @for (week of days; track $index) {
-          <div class="grid grid-cols-7 border-b border-neutral-200 last:border-b-0">
-            @for (day of week; track $index) {
-              <article class="min-h-24 border-r border-neutral-200 p-2 text-sm text-neutral-700 last:border-r-0 md:min-h-28">
-                <p class="font-medium">{{ day }}</p>
-                @if (day === '12') {
-                  <div class="mt-1 rounded bg-red-100 px-1 py-0.5 text-[10px] text-red-700">Entrega Projeto Eng</div>
-                  <div class="mt-1 rounded bg-cyan-100 px-1 py-0.5 text-[10px] text-cyan-700">Leitura Capitulo 4</div>
-                }
-                @if (day === '15') {
-                  <div class="mt-1 rounded bg-amber-100 px-1 py-0.5 text-[10px] text-amber-700">Prova de Algoritmo</div>
-                }
-              </article>
-            }
-          </div>
+        @if (isLoading()) {
+          <p class="px-4 py-8 text-center text-neutral-500">Carregando calendario...</p>
+        } @else {
+          @for (week of days(); track $index) {
+            <div class="grid grid-cols-7 border-b border-neutral-200 last:border-b-0">
+              @for (day of week; track $index) {
+                <article class="min-h-24 border-r border-neutral-200 p-2 text-sm text-neutral-700 last:border-r-0 md:min-h-28">
+                  @if (day) {
+                    <p class="font-medium">{{ day.dayNumber }}</p>
+                    @for (item of day.items.slice(0, 2); track item.id) {
+                      <div class="mt-1 rounded bg-cyan-100 px-1 py-0.5 text-[10px] text-cyan-700">{{ item.title }}</div>
+                    }
+                  }
+                </article>
+              }
+            </div>
+          }
         }
       </div>
     </section>
@@ -57,7 +63,7 @@
             <fa-icon [icon]="filterIcon"></fa-icon>
           </button>
         </div>
-        <p class="text-xs text-neutral-500">Terca-feira, 12 de marco</p>
+        <p class="text-xs text-neutral-500">{{ monthLabel() }}</p>
 
         <div class="mt-3 space-y-2">
           @for (item of agenda(); track item.id) {
@@ -66,6 +72,8 @@
               <p class="text-sm text-neutral-500">{{ item.subject }}</p>
               <p class="mt-1 text-xs text-neutral-400">{{ item.time }}</p>
             </article>
+          } @empty {
+            <p class="text-sm text-neutral-500">Sem compromissos retornados para este mes.</p>
           }
         </div>
       </section>
@@ -73,10 +81,10 @@
       <section class="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold text-primary-500">Status do Mes</h3>
-          <span class="rounded-full bg-primary-500/20 px-2 py-1 text-xs text-primary-500">Marco</span>
+          <span class="rounded-full bg-primary-500/20 px-2 py-1 text-xs text-primary-500">{{ monthLabel() }}</span>
         </div>
-        <p class="mt-2 text-sm text-neutral-600">Tarefas Concluidas</p>
-        <p class="text-3xl font-bold text-neutral-800">12 <span class="text-base text-neutral-500">/ 24</span></p>
+        <p class="mt-2 text-sm text-neutral-600">Tarefas no calendario</p>
+        <p class="text-3xl font-bold text-neutral-800">{{ agenda().length }}</p>
       </section>
     </aside>
   </div>
