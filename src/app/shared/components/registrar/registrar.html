@@ -42,16 +42,20 @@
     <div>
         <label for="terms" class="flex items-center gap-2 text-sm text-neutral-600 font-semibold">
             <input type="checkbox" id="terms" formControlName="terms" class="accent-primary-500">
-            Aceito os termos e condições
+            Aceito os termos e condicoes
         </label>
         @if (registerForm.controls.terms.touched && registerForm.controls.terms.invalid) {
             <p class="mt-1 text-xs text-red-500">Voce precisa aceitar os termos e condicoes.</p>
         }
     </div>
+    @if (errorMessage) {
+        <p class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{{ errorMessage }}</p>
+    }
     <button
         type="submit"
-        class="bg-primary-500 hover:bg-primary-500/80 text-neutral-900 flex justify-center items-center gap-2 py-2 rounded-md cursor-pointer shadow-sm">
-        <p class="text-xl font-lexend font-semibold">Cadastrar</p>
+        [disabled]="isSubmitting"
+        class="bg-primary-500 hover:bg-primary-500/80 text-neutral-900 flex justify-center items-center gap-2 py-2 rounded-md cursor-pointer shadow-sm disabled:cursor-not-allowed disabled:opacity-60">
+        <p class="text-xl font-lexend font-semibold">{{ isSubmitting ? 'Cadastrando...' : 'Cadastrar' }}</p>
         <fa-icon [icon]="arrowIcon"></fa-icon>
     </button>
 </form>

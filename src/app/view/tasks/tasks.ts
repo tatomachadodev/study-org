@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -9,12 +10,14 @@ import {
   faTags,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Task, TaskPriority, TaskRecurrence } from '../../core/models/task.model';
+import { TasksService } from '../../core/services/tasks.service';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
 
-type Priority = 'baixa' | 'media' | 'alta';
-
 interface PriorityOption {
-  value: Priority;
+  value: TaskPriority;
   label: string;
 }
 
@@ -27,8 +30,16 @@ interface PriorityOption {
 })
 export class Tasks {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly tasksService = inject(TasksService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly search = signal('');
+  readonly selectedTags = signal<string[]>([]);
+  readonly saveMessage = signal('');
+  readonly errorMessage = signal('');
+  readonly isSubmitting = signal(false);
+  readonly recentTasks = signal<Task[]>([]);
+  readonly isFormValid = signal(false);
 
   readonly priorities: PriorityOption[] = [
     { value: 'baixa', label: 'Baixa' },
@@ -36,24 +47,24 @@ export class Tasks {
     { value: 'alta', label: 'Alta' },
   ];
 
-  readonly recurrenceOptions = ['Nenhuma', 'Diaria', 'Semanal', 'Mensal'];
-
-  readonly selectedTags = signal<string[]>(['Provas', 'Urgente']);
-  readonly saveMessage = signal('');
+  readonly recurrenceOptions: Array<{ value: TaskRecurrence; label: string }> = [
+    { value: 'none', label: 'Nenhuma' },
+    { value: 'daily', label: 'Diaria' },
+    { value: 'weekly', label: 'Semanal' },
+    { value: 'monthly', label: 'Mensal' },
+  ];
 
   readonly taskForm = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.minLength(4)]],
     description: [''],
     course: ['', [Validators.required, Validators.minLength(2)]],
-    priority: ['media' as Priority, [Validators.required]],
-    dueDate: ['2026-04-25', [Validators.required]],
+    priority: ['media' as TaskPriority, [Validators.required]],
+    dueDate: [this.getTodayDate(), [Validators.required]],
     dueTime: ['14:00', [Validators.required]],
-    estimatedHours: ['2.5', [Validators.pattern(/^\d+([.,]\d+)?$/)]],
-    recurrence: ['Nenhuma', [Validators.required]],
+    estimatedHours: [''],
+    recurrence: ['none' as TaskRecurrence, [Validators.required]],
     newTag: [''],
   });
-
-  readonly canSubmit = computed(() => this.taskForm.valid && this.selectedTags().length > 0);
 
   readonly infoIcon = faCircleInfo;
   readonly tagsIcon = faTags;
@@ -61,11 +72,22 @@ export class Tasks {
   readonly plusIcon = faPlus;
   readonly removeIcon = faXmark;
 
+  constructor() {
+    this.isFormValid.set(this.taskForm.valid);
+    this.taskForm.statusChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.isFormValid.set(this.taskForm.valid);
+      });
+
+    this.loadRecentTasks();
+  }
+
   updateSearch(value: string): void {
     this.search.set(value);
   }
 
-  selectPriority(priority: Priority): void {
+  selectPriority(priority: TaskPriority): void {
     this.taskForm.controls.priority.setValue(priority);
   }
 
@@ -92,12 +114,105 @@ export class Tasks {
   }
 
   saveTask(): void {
-    if (!this.canSubmit()) {
+    if (!this.isFormValid()) {
       this.taskForm.markAllAsTouched();
       return;
     }
 
+    this.isSubmitting.set(true);
+    this.errorMessage.set('');
+    this.saveMessage.set('');
+
     const task = this.taskForm.getRawValue();
-    this.saveMessage.set(`Tarefa \"${task.title}\" pronta para criacao.`);
+    const estimatedHours = task.estimatedHours.trim() ? Number(task.estimatedHours.replace(',', '.')) : null;
+    const normalizedRecurrence = this.normalizeRecurrence(task.recurrence);
+
+    this.tasksService
+      .createTask({
+        title: task.title.trim(),
+        description: task.description.trim(),
+        course: task.course.trim(),
+        priority: task.priority,
+        dueDate: task.dueDate,
+        dueTime: task.dueTime,
+        estimatedHours,
+        recurrence: normalizedRecurrence,
+        tags: this.selectedTags(),
+      })
+      .pipe(finalize(() => this.isSubmitting.set(false)))
+      .subscribe({
+        next: (createdTask) => {
+          this.saveMessage.set(`Tarefa "${createdTask.title}" criada com sucesso.`);
+          this.taskForm.reset({
+            title: '',
+            description: '',
+            course: '',
+            priority: 'media',
+            dueDate: this.getTodayDate(),
+            dueTime: '14:00',
+            estimatedHours: '',
+            recurrence: 'none',
+            newTag: '',
+          });
+          this.selectedTags.set([]);
+          this.loadRecentTasks();
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(this.getErrorMessage(error));
+        },
+      });
+  }
+
+  private loadRecentTasks(): void {
+    this.tasksService.getTasks({ status: 'pending' }).subscribe({
+      next: (response) => {
+        this.recentTasks.set(response.items.slice(0, 5));
+      },
+      error: () => {
+        this.recentTasks.set([]);
+      },
+    });
+  }
+
+  private getTodayDate(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private normalizeRecurrence(value: string): TaskRecurrence {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized === 'diaria' || normalized === 'daily') {
+      return 'daily';
+    }
+
+    if (normalized === 'semanal' || normalized === 'weekly') {
+      return 'weekly';
+    }
+
+    if (normalized === 'mensal' || normalized === 'monthly') {
+      return 'monthly';
+    }
+
+    return 'none';
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (typeof error.error?.message === 'string') {
+        const fieldErrors = error.error?.errors as Record<string, string[]> | undefined;
+        if (fieldErrors) {
+          const details = Object.values(fieldErrors).flat().join(' ');
+          return details ? `${error.error.message} ${details}` : error.error.message;
+        }
+
+        return error.error.message;
+      }
+    }
+
+    return 'Nao foi possivel criar a tarefa.';
   }
 }
