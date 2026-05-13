@@ -19,7 +19,7 @@
             <p class="text-neutral-600">Insira suas credenciais para acessar sua conta</p>
         </div>
         <app-entrar *ngIf="activeTab === 'entrar'"></app-entrar>
-        <app-registrar *ngIf="activeTab === 'cadastrar'"></app-registrar>
+        <app-registrar *ngIf="activeTab === 'cadastrar'" (success)="switchTab('entrar')"></app-registrar>
 
     </div>
 </main>

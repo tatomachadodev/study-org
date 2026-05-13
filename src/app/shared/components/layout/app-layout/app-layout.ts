@@ -14,6 +14,7 @@ export class AppLayout {
   readonly searchValue = input('');
   readonly searchPlaceholder = input('Buscar tarefas, cursos...');
   readonly searchValueChange = output<string>();
+  readonly notificationCount = input(0);
 
   onSearchValueChange(value: string): void {
     this.searchValueChange.emit(value);

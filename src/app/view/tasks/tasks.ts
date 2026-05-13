@@ -1,7 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, RouterLink } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
   faCalendarDays,
@@ -15,9 +15,20 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Task, TaskPriority, TaskRecurrence } from '../../core/models/task.model';
 import { TasksService } from '../../core/services/tasks.service';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
+import { apiFetch, getApiErrorMessage } from '../../shared/services/api.service';
+import { AuthService } from '../../shared/services/auth.service';
+import { startWith } from 'rxjs';
+
+type Priority = 'baixa' | 'media' | 'alta';
+type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 
 interface PriorityOption {
   value: TaskPriority;
+  label: string;
+}
+
+interface RecurrenceOption {
+  value: Recurrence;
   label: string;
 }
 
@@ -30,16 +41,14 @@ interface PriorityOption {
 })
 export class Tasks {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly tasksService = inject(TasksService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly search = signal('');
-  readonly selectedTags = signal<string[]>([]);
-  readonly saveMessage = signal('');
-  readonly errorMessage = signal('');
   readonly isSubmitting = signal(false);
-  readonly recentTasks = signal<Task[]>([]);
-  readonly isFormValid = signal(false);
+  readonly saveMessage = signal('');
+  readonly saveError = signal('');
 
   readonly priorities: PriorityOption[] = [
     { value: 'baixa', label: 'Baixa' },
@@ -47,24 +56,29 @@ export class Tasks {
     { value: 'alta', label: 'Alta' },
   ];
 
-  readonly recurrenceOptions: Array<{ value: TaskRecurrence; label: string }> = [
+  readonly recurrenceOptions: RecurrenceOption[] = [
     { value: 'none', label: 'Nenhuma' },
     { value: 'daily', label: 'Diaria' },
     { value: 'weekly', label: 'Semanal' },
     { value: 'monthly', label: 'Mensal' },
   ];
 
+  readonly selectedTags = signal<string[]>(['Provas', 'Urgente']);
+  readonly formIsValid = signal(false);
+
   readonly taskForm = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.minLength(4)]],
     description: [''],
     course: ['', [Validators.required, Validators.minLength(2)]],
-    priority: ['media' as TaskPriority, [Validators.required]],
-    dueDate: [this.getTodayDate(), [Validators.required]],
-    dueTime: ['14:00', [Validators.required]],
-    estimatedHours: [''],
-    recurrence: ['none' as TaskRecurrence, [Validators.required]],
+    priority: ['media' as Priority, [Validators.required]],
+    dueDate: ['2026-04-25', [Validators.required]],
+    dueTime: ['14:00'],
+    estimatedHours: ['2.5', [Validators.pattern(/^(?:\d+|\d+[.,]\d+)$/)]],
+    recurrence: ['none' as Recurrence, [Validators.required]],
     newTag: [''],
   });
+
+  readonly canSubmit = computed(() => this.formIsValid() && this.selectedTags().length > 0);
 
   readonly infoIcon = faCircleInfo;
   readonly tagsIcon = faTags;
@@ -73,14 +87,11 @@ export class Tasks {
   readonly removeIcon = faXmark;
 
   constructor() {
-    this.isFormValid.set(this.taskForm.valid);
     this.taskForm.statusChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(startWith(this.taskForm.status), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        this.isFormValid.set(this.taskForm.valid);
+        this.formIsValid.set(this.taskForm.valid);
       });
-
-    this.loadRecentTasks();
   }
 
   updateSearch(value: string): void {
@@ -113,106 +124,63 @@ export class Tasks {
     this.selectedTags.update((current) => current.filter((tag) => tag !== tagToRemove));
   }
 
-  saveTask(): void {
-    if (!this.isFormValid()) {
+  async saveTask(): Promise<void> {
+    this.saveMessage.set('');
+    this.saveError.set('');
+
+    if (!this.canSubmit()) {
       this.taskForm.markAllAsTouched();
       return;
     }
 
+    const token = this.authService.token();
+    if (!token) {
+      void this.router.navigate(['/login']);
+      return;
+    }
+
     this.isSubmitting.set(true);
-    this.errorMessage.set('');
-    this.saveMessage.set('');
 
-    const task = this.taskForm.getRawValue();
-    const estimatedHours = task.estimatedHours.trim() ? Number(task.estimatedHours.replace(',', '.')) : null;
-    const normalizedRecurrence = this.normalizeRecurrence(task.recurrence);
+    try {
+      const task = this.taskForm.getRawValue();
 
-    this.tasksService
-      .createTask({
-        title: task.title.trim(),
-        description: task.description.trim(),
-        course: task.course.trim(),
-        priority: task.priority,
-        dueDate: task.dueDate,
-        dueTime: task.dueTime,
-        estimatedHours,
-        recurrence: normalizedRecurrence,
-        tags: this.selectedTags(),
-      })
-      .pipe(finalize(() => this.isSubmitting.set(false)))
-      .subscribe({
-        next: (createdTask) => {
-          this.saveMessage.set(`Tarefa "${createdTask.title}" criada com sucesso.`);
-          this.taskForm.reset({
-            title: '',
-            description: '',
-            course: '',
-            priority: 'media',
-            dueDate: this.getTodayDate(),
-            dueTime: '14:00',
-            estimatedHours: '',
-            recurrence: 'none',
-            newTag: '',
-          });
-          this.selectedTags.set([]);
-          this.loadRecentTasks();
-        },
-        error: (error: unknown) => {
-          this.errorMessage.set(this.getErrorMessage(error));
-        },
+      const estimatedHours = task.estimatedHours.trim();
+      const description = task.description.trim();
+      const dueTime = task.dueTime.trim();
+
+      await apiFetch('/tasks', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({
+          title: task.title,
+          description: description ? description : undefined,
+          course: task.course,
+          priority: task.priority,
+          dueDate: task.dueDate,
+          dueTime: dueTime ? dueTime : undefined,
+          estimatedHours: estimatedHours ? Number(estimatedHours.replace(',', '.')) : undefined,
+          recurrence: task.recurrence,
+          tags: this.selectedTags(),
+        }),
       });
-  }
 
-  private loadRecentTasks(): void {
-    this.tasksService.getTasks({ status: 'pending' }).subscribe({
-      next: (response) => {
-        this.recentTasks.set(response.items.slice(0, 5));
-      },
-      error: () => {
-        this.recentTasks.set([]);
-      },
-    });
-  }
-
-  private getTodayDate(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  private normalizeRecurrence(value: string): TaskRecurrence {
-    const normalized = value.trim().toLowerCase();
-
-    if (normalized === 'diaria' || normalized === 'daily') {
-      return 'daily';
+      this.saveMessage.set(`Tarefa "${task.title}" criada com sucesso.`);
+      this.taskForm.reset({
+        title: '',
+        description: '',
+        course: '',
+        priority: 'media',
+        dueDate: task.dueDate,
+        dueTime: '',
+        estimatedHours: '',
+        recurrence: 'none',
+        newTag: '',
+      });
+      this.selectedTags.set(['Provas', 'Urgente']);
+    } catch (error) {
+      this.saveError.set(getApiErrorMessage(error));
+    } finally {
+      this.isSubmitting.set(false);
     }
-
-    if (normalized === 'semanal' || normalized === 'weekly') {
-      return 'weekly';
-    }
-
-    if (normalized === 'mensal' || normalized === 'monthly') {
-      return 'monthly';
-    }
-
-    return 'none';
-  }
-
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      if (typeof error.error?.message === 'string') {
-        const fieldErrors = error.error?.errors as Record<string, string[]> | undefined;
-        if (fieldErrors) {
-          const details = Object.values(fieldErrors).flat().join(' ');
-          return details ? `${error.error.message} ${details}` : error.error.message;
-        }
-
-        return error.error.message;
-      }
-    }
-
-    return 'Nao foi possivel criar a tarefa.';
   }
 }

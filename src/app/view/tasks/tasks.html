@@ -159,7 +159,7 @@
             formControlName="recurrence"
             class="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-neutral-700 outline-none transition focus:border-primary-500"
           >
-            @for (option of recurrenceOptions; track option.value) {
+            @for (option of recurrenceOptions; track option) {
               <option [value]="option.value">{{ option.label }}</option>
             }
           </select>
@@ -174,7 +174,7 @@
         <button
           type="submit"
           class="rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-semibold text-neutral-900 transition hover:bg-primary-500/80 disabled:cursor-not-allowed disabled:opacity-60"
-          [disabled]="!isFormValid() || isSubmitting()"
+          [disabled]="!canSubmit() || isSubmitting()"
         >
           {{ isSubmitting() ? 'Criando...' : 'Criar Tarefa' }}
         </button>
@@ -189,6 +189,12 @@
       @if (saveMessage()) {
         <p class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {{ saveMessage() }}
+        </p>
+      }
+
+      @if (saveError()) {
+        <p class="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {{ saveError() }}
         </p>
       }
     </form>

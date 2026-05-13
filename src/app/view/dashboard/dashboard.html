@@ -1,17 +1,18 @@
-<app-layout [searchValue]="search()" (searchValueChange)="updateSearch($event)">
+<app-layout [searchValue]="search()" [notificationCount]="tasksNext7Days().length" (searchValueChange)="updateSearch($event)">
+  @if (loadError()) {
+    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ loadError() }}
+    </div>
+  }
+
   <div class="flex min-w-0 flex-1 flex-col gap-5 lg:flex-row">
     <div class="min-w-0 flex-1">
       <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-3xl font-bold text-neutral-800">Bem vindo, {{ userName() }}!</h1>
+          <h1 class="text-3xl font-bold text-neutral-800">Bem vindo{{ userName() ? ', ' + userName() : '' }}! <span class="text-2xl">👋</span></h1>
           <p class="mt-1 text-neutral-500">
-            Voce tem {{ pendingTasks().length }} tarefas prioritarias para hoje. Vamos comecar?
+            Voce tem {{ tasksNext30Days().length }} atividades nos proximos 30 dias.
           </p>
-        </div>
-        <div class="flex rounded-xl border border-neutral-200 bg-neutral-50 p-1 text-sm">
-          <button type="button" class="rounded-lg bg-white px-3 py-1.5 font-semibold text-primary-500">Dashboard</button>
-          <button type="button" class="rounded-lg px-3 py-1.5 text-neutral-600 hover:bg-white">Agenda</button>
-          <button type="button" class="rounded-lg px-3 py-1.5 text-neutral-600 hover:bg-white">Historico</button>
         </div>
       </div>
 
@@ -21,9 +22,9 @@
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-cyan-100 text-primary-500">
               <fa-icon [icon]="clockIcon"></fa-icon>
             </span>
-            <span class="text-sm">Tarefas Hoje</span>
+            <span class="text-sm">Tarefas Proximos 30 Dias</span>
           </div>
-          <p class="text-3xl font-bold text-neutral-800">{{ summary()?.stats?.todayTasks ?? pendingTasks().length }}</p>
+          <p class="text-3xl font-bold text-neutral-800">{{ tasksNext30Days().length }}</p>
         </article>
 
         <article class="rounded-xl border border-neutral-200 bg-white p-4">
@@ -33,7 +34,7 @@
             </span>
             <span class="text-sm">Em Atraso</span>
           </div>
-          <p class="text-3xl font-bold text-neutral-800">{{ lateTasks() }}</p>
+          <p class="text-3xl font-bold text-neutral-800">{{ lateTasks().length }}</p>
         </article>
 
         <article class="rounded-xl border border-neutral-200 bg-white p-4">
@@ -43,7 +44,7 @@
             </span>
             <span class="text-sm">Proximo Prazo</span>
           </div>
-          <p class="text-3xl font-bold text-neutral-800">{{ summary()?.stats?.nextDeadlineIn ?? '--' }}</p>
+          <p class="text-3xl font-bold text-neutral-800">{{ nextDeadlineDisplay() }}</p>
         </article>
 
         <article class="rounded-xl border border-neutral-200 bg-white p-4">
@@ -53,36 +54,15 @@
             </span>
             <span class="text-sm">Media Semanal</span>
           </div>
-          <p class="text-3xl font-bold text-neutral-800">{{ summary()?.stats?.weeklyAverage ?? 0 }}%</p>
+          <p class="text-3xl font-bold text-neutral-800">{{ weeklyAverageDisplay() }}</p>
         </article>
       </div>
 
-      @if (errorMessage()) {
-        <p class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{ errorMessage() }}</p>
-      }
-
       <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label class="flex w-full max-w-md items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-neutral-500">
-          <fa-icon [icon]="searchIcon"></fa-icon>
-          <input
-            type="text"
-            class="w-full border-0 bg-transparent text-sm text-neutral-700 outline-none"
-            placeholder="Pesquisar em suas tarefas..."
-            [value]="search()"
-            (input)="updateSearch($any($event.target).value)"
-          />
-        </label>
-
-        <div class="flex items-center gap-2">
-          <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100">
-            <fa-icon [icon]="filterIcon"></fa-icon>
-            Filtros
-          </button>
-          <button type="button" (click)="openCreateTask()" class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-primary-500/80">
-            <fa-icon [icon]="plusIcon"></fa-icon>
-            Criar Tarefa
-          </button>
-        </div>
+        <button type="button" (click)="openCreateTask()" class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-primary-500/80">
+          <fa-icon [icon]="plusIcon"></fa-icon>
+          Criar Tarefa
+        </button>
       </div>
 
       <section class="mt-5 rounded-2xl border border-neutral-200 bg-white">
@@ -92,26 +72,35 @@
 
         <div class="divide-y divide-neutral-200">
           @if (isLoading()) {
-            <p class="px-4 py-6 text-center text-neutral-500">Carregando tarefas...</p>
+            <p class="px-4 py-6 text-center text-neutral-500">Carregando tarefas do backend...</p>
           } @else {
             @for (task of filteredTasks(); track task.id) {
-              <article class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <article
+                class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                (mouseenter)="setHoveredTask(task.id)"
+                (mouseleave)="setHoveredTask(null)"
+              >
                 <div class="flex min-w-0 items-start gap-3">
                   <button
                     type="button"
                     class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]"
-                    [disabled]="isUpdatingTask() === task.id"
-                    [class]="task.status === 'completed' ? 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-primary-500 bg-primary-500 text-white' : 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]'"
+                    [class]="task.done ? 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-primary-500 bg-primary-500 text-white' : 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]'"
                     (click)="toggleTask(task.id)"
-                    [attr.aria-label]="task.status === 'completed' ? 'Desmarcar tarefa' : 'Marcar tarefa como concluida'"
+                    [disabled]="togglingTaskId() === task.id"
+                    [attr.aria-busy]="togglingTaskId() === task.id ? 'true' : null"
+                    [attr.aria-label]="task.done ? 'Desmarcar tarefa' : 'Marcar tarefa como concluida'"
                   >
-                    @if (task.status === 'completed') {
-                      <fa-icon [icon]="checkIcon"></fa-icon>
+                    @if (togglingTaskId() === task.id) {
+                      <span class="animate-pulse text-[10px]">...</span>
+                    } @else {
+                      @if (task.done) {
+                        <fa-icon [icon]="checkIcon"></fa-icon>
+                      }
                     }
                   </button>
 
                   <div class="min-w-0">
-                    <p [class]="task.status === 'completed' ? 'truncate text-neutral-400 line-through' : 'truncate text-neutral-800'">
+                    <p [class]="task.done ? 'truncate text-neutral-400 line-through' : 'truncate text-neutral-800'">
                       {{ task.title }}
                     </p>
                     <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
@@ -131,57 +120,70 @@
           }
         </div>
 
-        <div class="border-t border-neutral-200 px-4 py-3 text-center text-sm text-neutral-500">
-          Ver todas as tarefas pendentes
+        <div class="border-t border-neutral-200 px-4 py-3 text-center text-sm text-neutral-500 cursor-pointer hover:text-primary-500">
+          Ver lista de tarefas concluidas
         </div>
       </section>
     </div>
 
     <aside class="w-full lg:w-80 xl:w-85">
       <section class="rounded-2xl border border-neutral-200 bg-white p-4">
-        <h3 class="text-xl font-semibold text-neutral-800">Progresso do Semestre</h3>
-        <p class="mt-1 text-sm text-neutral-500">Acompanhe seu ritmo a partir das tarefas do dashboard.</p>
+        <h3 class="text-xl font-semibold text-neutral-800">Atividade da Semana</h3>
 
-        <div class="mt-4 h-44 rounded-xl bg-linear-to-b from-cyan-100/60 to-cyan-50 p-3">
-          <div class="h-full w-full rounded-lg border border-cyan-200/70 bg-[linear-gradient(to_top,#8BE7F9_8%,transparent_8%)]"></div>
+        <div class="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <div class="flex h-32 items-end justify-between gap-2">
+            @for (day of weeklyTasksIntensity(); track day.day) {
+              <div class="flex flex-1 flex-col items-center gap-2">
+                <div class="flex w-full flex-col gap-1">
+                  @if (day.count > 0) {
+                    @for (i of [].constructor(day.count); track $index) {
+                      <div class="h-6 rounded-sm" [class]="heatmapColor(day.count)" [title]="day.count + ' tarefa(s)'"></div>
+                    }
+                  } @else {
+                    <div class="h-6 rounded-sm border border-neutral-200 bg-neutral-100"></div>
+                  }
+                </div>
+                <span class="text-xs font-semibold text-neutral-600">{{ day.day }}</span>
+              </div>
+            }
+          </div>
         </div>
 
-        <div class="mt-2 grid grid-cols-4 text-center text-xs text-neutral-500">
-          <span>Set</span>
-          <span>Out</span>
-          <span>Nov</span>
-          <span>Dez</span>
+        <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs text-neutral-500">
+          <span>Leve</span>
+          <span>Moderado</span>
+          <span>Intenso</span>
         </div>
       </section>
 
       <section class="mt-4">
-        <h3 class="mb-2 text-sm font-bold tracking-[0.2em] text-neutral-500">FOCO DE HOJE</h3>
+        <h3 class="mb-3 text-lg font-semibold text-neutral-800">Foco Agora</h3>
         <div class="space-y-2">
           @for (item of focusItems(); track item.id) {
-            <article class="flex items-center justify-between rounded-xl border p-3" [class]="focusClass(item.tone)">
-              <div>
-                <p class="font-semibold text-neutral-800">{{ item.title }}</p>
-                <p class="text-xs text-neutral-500">{{ item.subtitle }}</p>
-              </div>
-              <fa-icon [icon]="arrowIcon" class="text-neutral-500"></fa-icon>
+            <article class="rounded-2xl border p-3" [class]="focusClass(item.tone)">
+              <p class="text-sm font-medium text-neutral-800">{{ item.title }}</p>
+              <p class="mt-1 text-xs text-neutral-500">{{ item.subtitle }}</p>
             </article>
-          } @empty {
-            <p class="rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-500">Sem sugestoes de foco para hoje.</p>
           }
         </div>
-      </section>
 
-      <section class="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-center">
-        <div class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-full bg-white text-primary-500">
-          <fa-icon [icon]="calendarIcon"></fa-icon>
+        <h3 class="mb-3 mt-4 text-lg font-semibold text-neutral-800">Proximas Tarefas</h3>
+        <div class="space-y-2">
+          @for (task of nextWeekTasks(); track task.id) {
+            <article class="rounded-xl border border-neutral-200 bg-white p-3 transition-all hover:border-primary-300 hover:shadow-sm">
+              <div class="flex items-start gap-3">
+                <span class="shrink-0 text-xl">{{ getTaskEmoji(task.course) }}</span>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium text-neutral-800">{{ task.title }}</p>
+                  <p class="mt-1 text-xs text-neutral-500">{{ task.deadlineLabel }}</p>
+                </div>
+                <span class="inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" [class]="priorityClass(task.priority)">
+                  {{ task.priority }}
+                </span>
+              </div>
+            </article>
+          }
         </div>
-        <p class="font-semibold text-neutral-800">Planejamento em andamento</p>
-        <p class="mt-1 text-xs text-neutral-500">
-          Use o calendario e a criacao de tarefas para manter seus prazos organizados.
-        </p>
-        <button type="button" (click)="openCreateTask()" class="mt-4 w-full rounded-lg border border-neutral-300 bg-white py-2 font-semibold text-neutral-700 hover:bg-neutral-100">
-          Criar Nova Tarefa
-        </button>
       </section>
     </aside>
   </div>

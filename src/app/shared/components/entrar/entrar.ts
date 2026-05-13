@@ -1,13 +1,25 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faArrowRight, faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { InputLogin } from "../input-login/input-login";
+import { apiFetch, getApiErrorMessage } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
+
+type LoginResponse = {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
 
 @Component({
   selector: 'app-entrar',
@@ -24,8 +36,8 @@ export class Entrar {
   emailIcon = faEnvelope;
   arrowIcon = faArrowRight;
   lockIcon: IconDefinition = faLock;
-  isSubmitting = false;
-  errorMessage = '';
+  readonly isSubmitting = signal(false);
+  readonly formError = signal('');
 
   readonly loginForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -33,33 +45,33 @@ export class Entrar {
     rememberMe: [false],
   });
 
-  submit(): void {
+  async submit(): Promise<void> {
+    this.formError.set('');
+
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
 
-    this.isSubmitting = true;
-    this.errorMessage = '';
+    this.isSubmitting.set(true);
 
-    this.authService
-      .login(this.loginForm.getRawValue())
-      .pipe(finalize(() => (this.isSubmitting = false)))
-      .subscribe({
-        next: () => {
-          void this.router.navigate(['/dashboard']);
-        },
-        error: (error: unknown) => {
-          this.errorMessage = this.getErrorMessage(error);
-        },
+    try {
+      const payload = this.loginForm.getRawValue();
+      const response = await apiFetch<LoginResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: payload.email,
+          password: payload.password,
+          rememberMe: payload.rememberMe,
+        }),
       });
-  }
 
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse && typeof error.error?.message === 'string') {
-      return error.error.message;
+      this.authService.setToken(response.accessToken);
+      await this.router.navigate(['/dashboard']);
+    } catch (error) {
+      this.formError.set(getApiErrorMessage(error));
+    } finally {
+      this.isSubmitting.set(false);
     }
-
-    return 'Nao foi possivel realizar o login.';
   }
 }
