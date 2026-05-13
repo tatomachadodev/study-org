@@ -50,8 +50,17 @@
     </div>
     <button
         type="submit"
+        [disabled]="isSubmitting()"
         class="bg-primary-500 hover:bg-primary-500/80 text-neutral-900 flex justify-center items-center gap-2 py-2 rounded-md cursor-pointer shadow-sm">
-        <p class="text-xl font-lexend font-semibold">Cadastrar</p>
+        <p class="text-xl font-lexend font-semibold">{{ isSubmitting() ? 'Cadastrando...' : 'Cadastrar' }}</p>
         <fa-icon [icon]="arrowIcon"></fa-icon>
     </button>
+
+    @if (formSuccess()) {
+        <p class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{{ formSuccess() }}</p>
+    }
+
+    @if (formError()) {
+        <p class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ formError() }}</p>
+    }
 </form>

@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faBell, faMoon, faSun, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faMoon, faUser } from '@fortawesome/free-solid-svg-icons';
 import { ThemeService } from '../../../services/theme.service';
 
 @Component({
@@ -16,12 +16,14 @@ export class Topbar {
   readonly searchValue = input('');
   readonly searchPlaceholder = input('Buscar tarefas, cursos...');
   readonly searchValueChange = output<string>();
+  readonly notificationCount = input(0);
+
+  readonly showNotificationPopup = signal(false);
 
   readonly isDark = this.themeService.isDark;
 
   readonly bellIcon = faBell;
   readonly moonIcon = faMoon;
-  readonly sunIcon = faSun;
   readonly userIcon = faUser;
 
   onSearchInput(event: Event): void {
@@ -31,5 +33,9 @@ export class Topbar {
 
   toggleTheme(): void {
     this.themeService.toggleTheme();
+  }
+
+  toggleNotificationPopup(): void {
+    this.showNotificationPopup.update((current) => !current);
   }
 }

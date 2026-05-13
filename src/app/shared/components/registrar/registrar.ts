@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Output, inject, signal } from '@angular/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faArrowRight, faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
@@ -10,6 +10,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { apiFetch, getApiErrorMessage } from '../../services/api.service';
 
 function passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
   const group = control as {
@@ -39,11 +40,16 @@ function passwordsMatchValidator(control: AbstractControl): ValidationErrors | n
 export class Registrar {
   private readonly formBuilder = inject(FormBuilder);
 
+  @Output() success = new EventEmitter<void>();
+
   emailIcon = faEnvelope;
   passwordIcon = faLock;
   arrowIcon = faArrowRight;
   lockIcon: IconDefinition = faLock;
   nameIcon: IconDefinition = faUser;
+  readonly isSubmitting = signal(false);
+  readonly formError = signal('');
+  readonly formSuccess = signal('');
 
   readonly registerForm = this.formBuilder.nonNullable.group(
     {
@@ -56,13 +62,44 @@ export class Registrar {
     { validators: [passwordsMatchValidator] },
   );
 
-  submit(): void {
+  async submit(): Promise<void> {
+    this.formError.set('');
+    this.formSuccess.set('');
+
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       return;
     }
 
-    // Cadastro ainda não integrado a backend.
-    // Mantemos apenas a validacao visual solicitada.
+    this.isSubmitting.set(true);
+
+    try {
+      const payload = this.registerForm.getRawValue();
+
+      await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: payload.name,
+          email: payload.email,
+          password: payload.password,
+          confirmPassword: payload.confirmPassword,
+          acceptTerms: payload.terms,
+        }),
+      });
+
+      this.formSuccess.set('Conta criada com sucesso. Agora faca o login.');
+      this.registerForm.reset({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        terms: false,
+      });
+      this.success.emit();
+    } catch (error) {
+      this.formError.set(getApiErrorMessage(error));
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 }

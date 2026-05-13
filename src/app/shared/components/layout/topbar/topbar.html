@@ -17,17 +17,56 @@
   </div>
 
   <div class="flex items-center justify-end gap-3">
-    <button type="button" aria-label="Notificacoes" class="rounded-full p-2 text-neutral-600 hover:bg-neutral-100">
-      <fa-icon [icon]="bellIcon"></fa-icon>
-    </button>
+    <div class="relative">
+      <button 
+        type="button" 
+        aria-label="Notificacoes" 
+        class="relative rounded-full p-2 text-neutral-600 hover:bg-neutral-100 transition-colors"
+        (click)="toggleNotificationPopup()"
+      >
+        <fa-icon [icon]="bellIcon"></fa-icon>
+        @if (notificationCount() > 0) {
+          <span class="absolute -top-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-semibold text-white">
+            {{ notificationCount() }}
+          </span>
+        }
+      </button>
+      
+      @if (showNotificationPopup()) {
+        <div class="absolute right-0 mt-3 w-80 rounded-lg border border-neutral-200 bg-white shadow-xl z-50">
+          <div class="border-b border-neutral-200 px-4 py-3">
+            <h3 class="text-sm font-semibold text-neutral-800">Atividades Pendentes (Próximos 7 Dias)</h3>
+          </div>
+          <div class="max-h-96 overflow-y-auto">
+            <p class="px-4 py-6 text-center text-sm text-neutral-500">Nenhuma atividade pendente</p>
+          </div>
+        </div>
+      }
+    </div>
+    
     <button
       type="button"
       [attr.aria-label]="isDark() ? 'Ativar tema claro' : 'Ativar tema escuro'"
       class="rounded-full p-2 text-neutral-600 hover:bg-neutral-100"
       (click)="toggleTheme()"
     >
-      <fa-icon [icon]="isDark() ? sunIcon : moonIcon"></fa-icon>
+      @if (isDark()) {
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      } @else {
+        <fa-icon [icon]="moonIcon"></fa-icon>
+      }
     </button>
+    
     <div class="h-9 w-9 rounded-full bg-neutral-200 grid place-items-center text-neutral-700">
       <fa-icon [icon]="userIcon"></fa-icon>
     </div>
