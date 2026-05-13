@@ -10,6 +10,10 @@ import {
   faTags,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import { finalize } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Task, TaskPriority, TaskRecurrence } from '../../core/models/task.model';
+import { TasksService } from '../../core/services/tasks.service';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
 import { apiFetch, getApiErrorMessage } from '../../shared/services/api.service';
 import { AuthService } from '../../shared/services/auth.service';
@@ -19,7 +23,7 @@ type Priority = 'baixa' | 'media' | 'alta';
 type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 
 interface PriorityOption {
-  value: Priority;
+  value: TaskPriority;
   label: string;
 }
 
@@ -94,7 +98,7 @@ export class Tasks {
     this.search.set(value);
   }
 
-  selectPriority(priority: Priority): void {
+  selectPriority(priority: TaskPriority): void {
     this.taskForm.controls.priority.setValue(priority);
   }
 

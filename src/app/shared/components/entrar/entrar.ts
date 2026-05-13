@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faArrowRight, faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons';
+import { finalize } from 'rxjs';
+import { AuthService } from '../../../core/services/auth.service';
 import { InputLogin } from "../input-login/input-login";
 import { apiFetch, getApiErrorMessage } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';

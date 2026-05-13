@@ -2,13 +2,18 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import {
-  faCalendarDays,
   faCalendarCheck,
+  faCalendarDays,
   faChartLine,
   faCheck,
   faClock,
   faPlus,
 } from '@fortawesome/free-solid-svg-icons';
+import { finalize } from 'rxjs';
+import { DashboardSummary } from '../../core/models/dashboard.model';
+import { TaskPriority, TaskStatus } from '../../core/models/task.model';
+import { DashboardService } from '../../core/services/dashboard.service';
+import { TasksService } from '../../core/services/tasks.service';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
 import { apiFetch, getApiErrorMessage } from '../../shared/services/api.service';
 import { AuthService } from '../../shared/services/auth.service';
@@ -94,10 +99,10 @@ export class Dashboard {
     const term = this.search().trim().toLowerCase();
 
     if (!term) {
-      return this.tasks();
+      return tasks;
     }
 
-    return this.tasks().filter((task) => {
+    return tasks.filter((task) => {
       return (
         task.title.toLowerCase().includes(term) ||
         task.course.toLowerCase().includes(term) ||
@@ -214,7 +219,7 @@ export class Dashboard {
     this.hoveredTaskId.set(taskId);
   }
 
-  priorityClass(priority: Priority): string {
+  priorityClass(priority: TaskPriority): string {
     if (priority === 'alta') {
       return 'bg-red-500 text-white';
     }
@@ -224,7 +229,7 @@ export class Dashboard {
     return 'bg-emerald-200 text-emerald-800';
   }
 
-  focusClass(tone: FocusItem['tone']): string {
+  focusClass(tone: 'amber' | 'cyan'): string {
     if (tone === 'amber') {
       return 'border-amber-100 bg-amber-50';
     }

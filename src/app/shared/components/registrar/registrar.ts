@@ -39,6 +39,8 @@ function passwordsMatchValidator(control: AbstractControl): ValidationErrors | n
 })
 export class Registrar {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   @Output() success = new EventEmitter<void>();
 
