@@ -1,11 +1,8 @@
 {
   "/api": {
-    "target": "http://localhost:3071",
+    "target": "https://studyorg.frameworksenac.com.br",
     "secure": false,
     "changeOrigin": true,
-    "pathRewrite": {
-      "^/api": ""
-    },
     "logLevel": "info"
   }
 }
