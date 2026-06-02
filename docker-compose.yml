@@ -1,0 +1,6 @@
+services:
+  study-org-frontend:
+    build: .
+    ports:
+      - "3070:3070"
+    restart: unless-stopped
