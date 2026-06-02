@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../../core/config/api.config';
+
 type ApiErrorPayload = {
   status: number;
   data: unknown;
@@ -7,7 +9,7 @@ type RequestOptions = RequestInit & {
   token?: string | null;
 };
 
-const API_BASE = (globalThis as { __env?: { API_URL?: string } }).__env?.API_URL ?? '/api';
+const API_BASE = (globalThis as { __env?: { API_URL?: string } }).__env?.API_URL ?? API_BASE_URL;
 
 async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const url = API_BASE.endsWith('/') || path.startsWith('/') ? `${API_BASE}${path}` : `${API_BASE}/${path}`;

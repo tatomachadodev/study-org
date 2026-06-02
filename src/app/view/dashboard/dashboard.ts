@@ -9,14 +9,9 @@ import {
   faClock,
   faPlus,
 } from '@fortawesome/free-solid-svg-icons';
-import { finalize } from 'rxjs';
-import { DashboardSummary } from '../../core/models/dashboard.model';
-import { TaskPriority, TaskStatus } from '../../core/models/task.model';
-import { DashboardService } from '../../core/services/dashboard.service';
-import { TasksService } from '../../core/services/tasks.service';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
 import { apiFetch, getApiErrorMessage } from '../../shared/services/api.service';
-import { AuthService } from '../../shared/services/auth.service';
+import { AuthSessionService } from '../../core/services/auth-session.service';
 
 type Priority = 'alta' | 'media' | 'baixa';
 type TaskStatus = 'pending' | 'completed' | 'overdue';
@@ -78,7 +73,7 @@ interface ToggleTaskResponse {
 })
 export class Dashboard {
   private readonly router = inject(Router);
-  private readonly authService = inject(AuthService);
+  private readonly session = inject(AuthSessionService);
 
   readonly userName = signal('');
   readonly search = signal('');
@@ -97,6 +92,7 @@ export class Dashboard {
 
   readonly filteredTasks = computed(() => {
     const term = this.search().trim().toLowerCase();
+    const tasks = this.tasks();
 
     if (!term) {
       return tasks;
@@ -176,7 +172,7 @@ export class Dashboard {
   }
 
   async toggleTask(taskId: string): Promise<void> {
-    const token = this.authService.token();
+    const token = this.session.token();
     const currentTask = this.tasks().find((task) => task.id === taskId);
 
     if (!token || !currentTask) {
@@ -219,7 +215,7 @@ export class Dashboard {
     this.hoveredTaskId.set(taskId);
   }
 
-  priorityClass(priority: TaskPriority): string {
+  priorityClass(priority: Priority): string {
     if (priority === 'alta') {
       return 'bg-red-500 text-white';
     }
@@ -260,7 +256,7 @@ export class Dashboard {
   }
 
   async loadDashboard(): Promise<void> {
-    const token = this.authService.token();
+    const token = this.session.token();
 
     if (!token) {
       void this.router.navigate(['/login']);

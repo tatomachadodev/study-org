@@ -10,26 +10,34 @@ import {
   faTags,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
-import { finalize } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Task, TaskPriority, TaskRecurrence } from '../../core/models/task.model';
-import { TasksService } from '../../core/services/tasks.service';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
 import { apiFetch, getApiErrorMessage } from '../../shared/services/api.service';
-import { AuthService } from '../../shared/services/auth.service';
+import { AuthSessionService } from '../../core/services/auth-session.service';
 import { startWith } from 'rxjs';
 
 type Priority = 'baixa' | 'media' | 'alta';
 type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 
 interface PriorityOption {
-  value: TaskPriority;
+  value: Priority;
   label: string;
 }
 
 interface RecurrenceOption {
   value: Recurrence;
   label: string;
+}
+
+interface RecentTask {
+  id: string;
+  title: string;
+  course: string;
+  dueDate: string;
+  dueTime: string | null;
+}
+
+interface TasksResponse {
+  items: RecentTask[];
 }
 
 @Component({
@@ -41,7 +49,7 @@ interface RecurrenceOption {
 })
 export class Tasks {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
+  private readonly session = inject(AuthSessionService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -49,6 +57,8 @@ export class Tasks {
   readonly isSubmitting = signal(false);
   readonly saveMessage = signal('');
   readonly saveError = signal('');
+  readonly errorMessage = signal('');
+  readonly recentTasks = signal<RecentTask[]>([]);
 
   readonly priorities: PriorityOption[] = [
     { value: 'baixa', label: 'Baixa' },
@@ -92,13 +102,15 @@ export class Tasks {
       .subscribe(() => {
         this.formIsValid.set(this.taskForm.valid);
       });
+
+    void this.loadRecentTasks();
   }
 
   updateSearch(value: string): void {
     this.search.set(value);
   }
 
-  selectPriority(priority: TaskPriority): void {
+  selectPriority(priority: Priority): void {
     this.taskForm.controls.priority.setValue(priority);
   }
 
@@ -133,7 +145,7 @@ export class Tasks {
       return;
     }
 
-    const token = this.authService.token();
+    const token = this.session.token();
     if (!token) {
       void this.router.navigate(['/login']);
       return;
@@ -177,10 +189,29 @@ export class Tasks {
         newTag: '',
       });
       this.selectedTags.set(['Provas', 'Urgente']);
+      await this.loadRecentTasks();
     } catch (error) {
       this.saveError.set(getApiErrorMessage(error));
     } finally {
       this.isSubmitting.set(false);
+    }
+  }
+
+  private async loadRecentTasks(): Promise<void> {
+    const token = this.session.token();
+
+    if (!token) {
+      this.recentTasks.set([]);
+      return;
+    }
+
+    this.errorMessage.set('');
+
+    try {
+      const response = await apiFetch<TasksResponse>('/tasks', { token });
+      this.recentTasks.set(response.items.slice(0, 4));
+    } catch (error) {
+      this.errorMessage.set(getApiErrorMessage(error));
     }
   }
 }

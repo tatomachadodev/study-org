@@ -4,11 +4,9 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faArrowRight, faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons';
-import { finalize } from 'rxjs';
-import { AuthService } from '../../../core/services/auth.service';
 import { InputLogin } from "../input-login/input-login";
 import { apiFetch, getApiErrorMessage } from '../../services/api.service';
-import { AuthService } from '../../services/auth.service';
+import { AuthSessionService } from '../../../core/services/auth-session.service';
 
 type LoginResponse = {
   accessToken: string;
@@ -31,7 +29,7 @@ type LoginResponse = {
 export class Entrar {
   private readonly router = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
+  private readonly session = inject(AuthSessionService);
 
   emailIcon = faEnvelope;
   arrowIcon = faArrowRight;
@@ -66,7 +64,7 @@ export class Entrar {
         }),
       });
 
-      this.authService.setToken(response.accessToken);
+      this.session.setSession(response);
       await this.router.navigate(['/dashboard']);
     } catch (error) {
       this.formError.set(getApiErrorMessage(error));

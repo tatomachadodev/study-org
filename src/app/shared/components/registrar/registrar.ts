@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Output, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { faArrowRight, faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
@@ -11,6 +12,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { apiFetch, getApiErrorMessage } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 
 function passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
   const group = control as {
