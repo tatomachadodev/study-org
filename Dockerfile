@@ -15,4 +15,8 @@ FROM nginx:1.29-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/study-org/browser /usr/share/nginx/html
 
+ENV API_URL=https://studyorg.frameworksenac.com.br/api
+
 EXPOSE 3070
+
+CMD ["/bin/sh", "-c", "printf 'globalThis.__env = { API_URL: \"%s\" };\\n' \"$API_URL\" > /usr/share/nginx/html/env.js && nginx -g 'daemon off;'"]

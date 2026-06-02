@@ -1,6 +1,8 @@
 services:
   study-org-frontend:
     build: .
+    environment:
+      API_URL: https://studyorg.frameworksenac.com.br/api
     ports:
       - "3070:3070"
     restart: unless-stopped
