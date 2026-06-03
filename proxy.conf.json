@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "https://studyorg.frameworksenac.com.br",
+    "target": "http://95.111.238.203",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "info"

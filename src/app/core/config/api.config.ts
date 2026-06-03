@@ -4,7 +4,7 @@ type RuntimeEnv = {
   };
 };
 
-const DEFAULT_API_URL = 'https://studyorg.frameworksenac.com.br/api';
+const DEFAULT_API_URL = 'http://95.111.238.203/api';
 
 function normalizeApiUrl(url: string): string {
   return url.replace(/\/+$/, '');

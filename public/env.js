@@ -1,3 +1,3 @@
 globalThis.__env = {
-  API_URL: 'https://studyorg.frameworksenac.com.br/api',
+  API_URL: 'http://95.111.238.203/api',
 };

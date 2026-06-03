@@ -15,7 +15,7 @@ FROM nginx:1.29-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/study-org/browser /usr/share/nginx/html
 
-ENV API_URL=https://studyorg.frameworksenac.com.br/api
+ENV API_URL=http://95.111.238.203/api
 
 EXPOSE 3070
 
