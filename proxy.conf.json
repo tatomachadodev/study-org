@@ -1,8 +1,0 @@
-{
-  "/api": {
-    "target": "http://95.111.238.203",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "info"
-  }
-}
