@@ -1,11 +1,12 @@
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 
 const root = join(process.cwd(), 'public');
 const port = Number(process.env.PORT || 3070);
-const apiUrl = (process.env.API_URL || 'http://95.111.238.203:3071').replace(/\/+$/, '');
+const apiUrl = (process.env.API_URL || '/api').replace(/\/+$/, '') || '/api';
+const backendUrl = (process.env.BACKEND_URL || 'http://95.111.238.203:3071').replace(/\/+$/, '');
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -40,8 +41,32 @@ function resolveAssetPath(urlPath) {
   return existsSync(requestedPath) ? requestedPath : join(root, 'index.html');
 }
 
+function proxyApiRequest(req, res) {
+  const target = new URL((req.url || '/api').replace(/^\/api/, '') || '/', backendUrl);
+  const headers = { ...req.headers, host: target.host };
+
+  const proxyReq = request(target, {
+    method: req.method,
+    headers,
+  }, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', () => {
+    send(res, 502, 'Bad gateway');
+  });
+
+  req.pipe(proxyReq);
+}
+
 createServer(async (req, res) => {
   try {
+    if (req.url?.startsWith('/api')) {
+      proxyApiRequest(req, res);
+      return;
+    }
+
     if (req.url === '/env.js') {
       send(res, 200, `globalThis.__env = { API_URL: ${JSON.stringify(apiUrl)} };\n`, {
         'Cache-Control': 'no-store',

@@ -1,3 +1,3 @@
 globalThis.__env = {
-  API_URL: 'http://95.111.238.203:3071',
+  API_URL: '/api',
 };

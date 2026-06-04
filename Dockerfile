@@ -17,7 +17,8 @@ WORKDIR /app
 COPY server.mjs ./
 COPY --from=build /app/dist/study-org/browser ./public
 
-ENV API_URL=http://95.111.238.203:3071
+ENV API_URL=/api
+ENV BACKEND_URL=http://95.111.238.203:3071
 ENV PORT=3070
 
 EXPOSE 3070
