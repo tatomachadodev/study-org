@@ -2,7 +2,8 @@ services:
   study-org-frontend:
     build: .
     environment:
-      API_URL: http://95.111.238.203:3071
+      API_URL: ${API_URL:-http://95.111.238.203:3071}
+      PORT: ${PORT:-3070}
     ports:
-      - "3070:3070"
+      - "${PORT:-3070}:3070"
     restart: unless-stopped

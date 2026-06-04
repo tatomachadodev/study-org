@@ -5,7 +5,7 @@ import { extname, join, normalize } from 'node:path';
 
 const root = join(process.cwd(), 'public');
 const port = Number(process.env.PORT || 3070);
-const apiUrl = process.env.API_URL || 'http://95.111.238.203:3071';
+const apiUrl = (process.env.API_URL || 'http://95.111.238.203:3071').replace(/\/+$/, '');
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -43,7 +43,7 @@ function resolveAssetPath(urlPath) {
 createServer(async (req, res) => {
   try {
     if (req.url === '/env.js') {
-      send(res, 200, `globalThis.__env = { API_URL: "${apiUrl}" };\n`, {
+      send(res, 200, `globalThis.__env = { API_URL: ${JSON.stringify(apiUrl)} };\n`, {
         'Cache-Control': 'no-store',
         'Content-Type': 'text/javascript; charset=utf-8',
       });
