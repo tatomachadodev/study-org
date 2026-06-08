@@ -48,6 +48,22 @@ body {
     background-color: #22324a;
 }
 
+.dark .hover\:bg-neutral-100:hover {
+    background-color: #18253a;
+}
+
+.dark .hover\:bg-neutral-200:hover {
+    background-color: #22324a;
+}
+
+.dark .hover\:bg-white:hover {
+    background-color: #1b2940;
+}
+
+.dark .hover\:bg-primary-500\/80:hover {
+    background-color: rgba(31, 213, 249, 0.7);
+}
+
 .dark .bg-cyan-50 {
     background-color: #13283a;
 }
