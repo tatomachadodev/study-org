@@ -33,24 +33,59 @@ body {
 }
 
 .dark .bg-white {
-    background-color: #101826;
+    background-color: #162134;
 }
 
 .dark .bg-neutral-50 {
-    background-color: #0f172a;
+    background-color: #121d30;
 }
 
 .dark .bg-neutral-100 {
-    background-color: #111c2e;
+    background-color: #18253a;
 }
 
 .dark .bg-neutral-200 {
-    background-color: #1f2a3d;
+    background-color: #22324a;
+}
+
+.dark .bg-cyan-50 {
+    background-color: #13283a;
+}
+
+.dark .bg-amber-50 {
+    background-color: #2b2316;
+}
+
+.dark .bg-red-50 {
+    background-color: #2a1722;
+}
+
+.dark .bg-emerald-50 {
+    background-color: #15291f;
 }
 
 .dark .border-neutral-200,
 .dark .border-neutral-300 {
     border-color: #273349;
+}
+
+.dark .border-cyan-100,
+.dark .border-cyan-200 {
+    border-color: #2a4f67;
+}
+
+.dark .border-amber-100,
+.dark .border-amber-200 {
+    border-color: #6a4d21;
+}
+
+.dark .border-red-100,
+.dark .border-red-200 {
+    border-color: #5c2b3b;
+}
+
+.dark .border-emerald-200 {
+    border-color: #2f5d4a;
 }
 
 .dark .divide-neutral-200 > :not([hidden]) ~ :not([hidden]) {
@@ -67,6 +102,27 @@ body {
 .dark .text-neutral-500,
 .dark .text-neutral-400 {
     color: #94a3b8;
+}
+
+.dark .text-cyan-800 {
+    color: #9bdcff;
+}
+
+.dark .text-red-600,
+.dark .text-red-700 {
+    color: #ffb4c4;
+}
+
+.dark .text-emerald-700 {
+    color: #9fe4c6;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+    background-color: #0f172a;
+    color: #e5e7eb;
+    border-color: #273349;
 }
 
 .dark input::placeholder {

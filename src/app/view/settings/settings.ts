@@ -36,6 +36,8 @@ export class Settings {
   readonly infoIcon = faCircleInfo;
   readonly shieldIcon = faShield;
 
+  private readonly preferredTheme = signal<'light' | 'dark'>(this.themeService.isDark() ? 'dark' : 'light');
+
   constructor() {
     this.loadUser();
   }
@@ -57,16 +59,18 @@ export class Settings {
   }
 
   setLightMode(): void {
+    this.preferredTheme.set('light');
     this.themeService.setTheme('light');
   }
 
   setDarkMode(): void {
+    this.preferredTheme.set('dark');
     this.themeService.setTheme('dark');
   }
 
   saveSettings(): void {
     const payload: UserPreferences = {
-      theme: this.isDark() ? 'dark' : 'light',
+      theme: this.preferredTheme() === 'dark' ? 'dark' : 'light',
       emailNotifications: this.emailNotifications(),
       pushNotifications: this.pushNotifications(),
       dailySummary: this.dailySummary(),
@@ -82,6 +86,8 @@ export class Settings {
       .subscribe({
         next: (preferences) => {
           this.applyPreferences(preferences);
+          this.preferredTheme.set(preferences.theme);
+          this.themeService.setTheme(preferences.theme);
           this.saveMessage.set('Preferencias salvas no backend.');
         },
         error: (error: unknown) => {
@@ -109,7 +115,7 @@ export class Settings {
           this.fullName.set(user.name);
           this.email.set(user.email);
           this.applyPreferences(user.preferences);
-          this.restoreFallbackPreferences();
+          this.preferredTheme.set(user.preferences.theme);
         },
         error: () => {
           this.errorMessage.set('Nao foi possivel carregar as configuracoes do usuario.');
@@ -122,12 +128,6 @@ export class Settings {
     this.emailNotifications.set(preferences.emailNotifications);
     this.pushNotifications.set(preferences.pushNotifications);
     this.dailySummary.set(preferences.dailySummary);
-
-    if (preferences.theme === 'dark') {
-      this.themeService.setTheme('dark');
-    } else {
-      this.themeService.setTheme('light');
-    }
   }
 
   private persistPreferencesLocally(preferences: UserPreferences): void {
@@ -145,7 +145,9 @@ export class Settings {
         return;
       }
 
-      this.applyPreferences(JSON.parse(rawValue) as UserPreferences);
+      const preferences = JSON.parse(rawValue) as UserPreferences;
+      this.applyPreferences(preferences);
+      this.preferredTheme.set(preferences.theme);
     } catch {
       // Ignore storage errors.
     }
