@@ -1,4 +1,8 @@
-<app-layout [searchValue]="search()" [notificationCount]="tasksNext7Days().length" (searchValueChange)="updateSearch($event)">
+<app-layout
+  [searchValue]="search()"
+  [notificationCount]="tasksNext7Days().length"
+  (searchValueChange)="updateSearch($event)"
+>
   @if (loadError()) {
     <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
       {{ loadError() }}
@@ -9,20 +13,22 @@
     <div class="min-w-0 flex-1">
       <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-3xl font-bold text-neutral-800">Bem vindo{{ userName() ? ', ' + userName() : '' }}! <span class="text-2xl">👋</span></h1>
+          <h1 class="text-3xl font-bold text-neutral-800">
+            Bem vindo{{ userName() ? ', ' + userName() : '' }}! <span class="text-2xl">👋</span>
+          </h1>
           <p class="mt-1 text-neutral-500">
             Voce tem {{ tasksNext30Days().length }} atividades nos proximos 30 dias.
           </p>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <article class="rounded-xl border border-neutral-200 bg-white p-4">
           <div class="mb-2 flex items-center gap-3 text-neutral-500">
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-cyan-100 text-primary-500">
               <fa-icon [icon]="clockIcon"></fa-icon>
             </span>
-            <span class="text-sm">Tarefas Proximos 30 Dias</span>
+            <span class="text-sm text-neutral-300 font-bold ">Em 30 Dias</span>
           </div>
           <p class="text-3xl font-bold text-neutral-800">{{ tasksNext30Days().length }}</p>
         </article>
@@ -32,34 +38,30 @@
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-red-100 text-red-500">
               <fa-icon [icon]="deadlineIcon"></fa-icon>
             </span>
-            <span class="text-sm">Em Atraso</span>
+            <span class="text-sm text-neutral-300 font-bold ">Em Atraso</span>
           </div>
           <p class="text-3xl font-bold text-neutral-800">{{ lateTasks().length }}</p>
         </article>
 
         <article class="rounded-xl border border-neutral-200 bg-white p-4">
           <div class="mb-2 flex items-center gap-3 text-neutral-500">
-            <span class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-100 text-neutral-600">
+            <span
+              class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-600 text-neutral-100"
+            >
               <fa-icon [icon]="calendarIcon"></fa-icon>
             </span>
-            <span class="text-sm">Proximo Prazo</span>
+            <span class="text-sm text-neutral-300 font-bold ">Proximo Prazo</span>
           </div>
           <p class="text-3xl font-bold text-neutral-800">{{ nextDeadlineDisplay() }}</p>
-        </article>
-
-        <article class="rounded-xl border border-neutral-200 bg-white p-4">
-          <div class="mb-2 flex items-center gap-3 text-neutral-500">
-            <span class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-100 text-neutral-700">
-              <fa-icon [icon]="chartIcon"></fa-icon>
-            </span>
-            <span class="text-sm">Media Semanal</span>
-          </div>
-          <p class="text-3xl font-bold text-neutral-800">{{ weeklyAverageDisplay() }}</p>
         </article>
       </div>
 
       <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <button type="button" (click)="openCreateTask()" class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-primary-500/80">
+        <button
+          type="button"
+          (click)="openCreateTask()"
+          class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-primary-500/80"
+        >
           <fa-icon [icon]="plusIcon"></fa-icon>
           Criar Tarefa
         </button>
@@ -84,11 +86,17 @@
                   <button
                     type="button"
                     class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]"
-                    [class]="task.done ? 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-primary-500 bg-primary-500 text-white' : 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]'"
+                    [class]="
+                      task.done
+                        ? 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-primary-500 bg-primary-500 text-white'
+                        : 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]'
+                    "
                     (click)="toggleTask(task.id)"
                     [disabled]="togglingTaskId() === task.id"
                     [attr.aria-busy]="togglingTaskId() === task.id ? 'true' : null"
-                    [attr.aria-label]="task.done ? 'Desmarcar tarefa' : 'Marcar tarefa como concluida'"
+                    [attr.aria-label]="
+                      task.done ? 'Desmarcar tarefa' : 'Marcar tarefa como concluida'
+                    "
                   >
                     @if (togglingTaskId() === task.id) {
                       <span class="animate-pulse text-[10px]">...</span>
@@ -100,27 +108,43 @@
                   </button>
 
                   <div class="min-w-0">
-                    <p [class]="task.done ? 'truncate text-neutral-400 line-through' : 'truncate text-neutral-800'">
+                    <p
+                      [class]="
+                        task.done
+                          ? 'truncate text-neutral-400 line-through'
+                          : 'truncate text-neutral-800'
+                      "
+                    >
                       {{ task.title }}
                     </p>
                     <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                      <span class="rounded-full bg-cyan-100 px-2 py-0.5 font-semibold text-cyan-800">{{ task.course }}</span>
+                      <span
+                        class="rounded-full bg-cyan-100 px-2 py-0.5 font-semibold text-cyan-800"
+                        >{{ task.course }}</span
+                      >
                       <span>{{ task.deadlineLabel }}</span>
                     </div>
                   </div>
                 </div>
 
-                <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" [class]="priorityClass(task.priority)">
+                <span
+                  class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
+                  [class]="priorityClass(task.priority)"
+                >
                   {{ task.priority }}
                 </span>
               </article>
             } @empty {
-              <p class="px-4 py-6 text-center text-neutral-500">Nenhuma tarefa encontrada para esse filtro.</p>
+              <p class="px-4 py-6 text-center text-neutral-500">
+                Nenhuma tarefa encontrada para esse filtro.
+              </p>
             }
           }
         </div>
 
-        <div class="border-t border-neutral-200 px-4 py-3 text-center text-sm text-neutral-500 cursor-pointer hover:text-primary-500">
+        <div
+          class="border-t border-neutral-200 px-4 py-3 text-center text-sm text-neutral-500 cursor-pointer hover:text-primary-500"
+        >
           Ver lista de tarefas concluidas
         </div>
       </section>
@@ -137,7 +161,11 @@
                 <div class="flex w-full flex-col gap-1">
                   @if (day.count > 0) {
                     @for (i of [].constructor(day.count); track $index) {
-                      <div class="h-6 rounded-sm" [class]="heatmapColor(day.count)" [title]="day.count + ' tarefa(s)'"></div>
+                      <div
+                        class="h-6 rounded-sm"
+                        [class]="heatmapColor(day.count)"
+                        [title]="day.count + ' tarefa(s)'"
+                      ></div>
                     }
                   } @else {
                     <div class="h-6 rounded-sm border border-neutral-200 bg-neutral-100"></div>
@@ -170,14 +198,19 @@
         <h3 class="mb-3 mt-4 text-lg font-semibold text-neutral-800">Proximas Tarefas</h3>
         <div class="space-y-2">
           @for (task of nextWeekTasks(); track task.id) {
-            <article class="rounded-xl border border-neutral-200 bg-white p-3 transition-all hover:border-primary-300 hover:shadow-sm">
+            <article
+              class="rounded-xl border border-neutral-200 bg-white p-3 transition-all hover:border-primary-300 hover:shadow-sm"
+            >
               <div class="flex items-start gap-3">
                 <span class="shrink-0 text-xl">{{ getTaskEmoji(task.course) }}</span>
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-sm font-medium text-neutral-800">{{ task.title }}</p>
                   <p class="mt-1 text-xs text-neutral-500">{{ task.deadlineLabel }}</p>
                 </div>
-                <span class="inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" [class]="priorityClass(task.priority)">
+                <span
+                  class="inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold"
+                  [class]="priorityClass(task.priority)"
+                >
                   {{ task.priority }}
                 </span>
               </div>
