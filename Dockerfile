@@ -4,8 +4,8 @@ WORKDIR /app
 
 RUN npm install -g npm@11.14.1
 
-COPY package.json ./
-RUN npm install --no-package-lock --no-audit --no-fund
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 RUN npm run build
@@ -18,7 +18,7 @@ COPY server.mjs ./
 COPY --from=build /app/dist/study-org/browser ./public
 
 ENV API_URL=/api
-ENV BACKEND_URL=http://95.111.238.203:3071
+ENV BACKEND_URL=http://host.docker.internal:3071
 ENV PORT=3070
 
 EXPOSE 3070

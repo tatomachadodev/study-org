@@ -1,9 +1,11 @@
 services:
   study-org-frontend:
     build: .
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       API_URL: ${API_URL:-/api}
-      BACKEND_URL: ${BACKEND_URL:-http://95.111.238.203:3071}
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal:3071}
       PORT: ${PORT:-3070}
     ports:
       - "${PORT:-3070}:3070"
