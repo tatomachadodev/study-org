@@ -35,18 +35,6 @@ interface RecurrenceOption {
   label: string;
 }
 
-interface RecentTask {
-  id: string;
-  title: string;
-  course: string;
-  dueDate: string;
-  dueTime: string | null;
-}
-
-interface TasksResponse {
-  items: RecentTask[];
-}
-
 @Component({
   selector: 'app-tasks',
   imports: [AppLayout, FontAwesomeModule, ReactiveFormsModule, RouterLink],
@@ -65,7 +53,6 @@ export class Tasks {
   readonly saveMessage = signal('');
   readonly saveError = signal('');
   readonly errorMessage = signal('');
-  readonly recentTasks = signal<RecentTask[]>([]);
 
   readonly priorities: PriorityOption[] = [
     { value: 'baixa', label: 'Baixa' },
@@ -112,8 +99,6 @@ export class Tasks {
       .subscribe(() => {
         this.formIsValid.set(this.taskForm.valid);
       });
-
-    void this.loadRecentTasks();
   }
 
   private formatDate(date: Date): string {
@@ -214,29 +199,10 @@ export class Tasks {
         newTag: '',
       });
       this.selectedTags.set(['Provas', 'Urgente']);
-      await this.loadRecentTasks();
     } catch (error) {
       this.saveError.set(getApiErrorMessage(error));
     } finally {
       this.isSubmitting.set(false);
-    }
-  }
-
-  private async loadRecentTasks(): Promise<void> {
-    const token = this.session.token();
-
-    if (!token) {
-      this.recentTasks.set([]);
-      return;
-    }
-
-    this.errorMessage.set('');
-
-    try {
-      const response = await apiFetch<TasksResponse>('/tasks', { token });
-      this.recentTasks.set(response.items.slice(0, 4));
-    } catch (error) {
-      this.errorMessage.set(getApiErrorMessage(error));
     }
   }
 }

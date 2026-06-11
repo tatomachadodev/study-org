@@ -78,16 +78,17 @@
           } @else {
             @for (task of visibleTasks(); track task.id) {
               <article
-                class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                class="flex cursor-pointer flex-col gap-2 px-4 py-3 transition hover:bg-neutral-50 sm:flex-row sm:items-center sm:justify-between"
                 (mouseenter)="setHoveredTask(task.id)"
                 (mouseleave)="setHoveredTask(null)"
+                (click)="openTaskDetails(task)"
               >
                 <div class="flex min-w-0 items-start gap-3">
                   <button
                     type="button"
                     class="mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]"
                     [class]="task.done ? 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-primary-500 bg-primary-500 text-white' : 'mt-1 grid h-5 w-5 shrink-0 place-items-center rounded border border-neutral-300 text-[10px]'"
-                    (click)="toggleTask(task.id)"
+                    (click)="$event.stopPropagation(); toggleTask(task.id)"
                     [disabled]="togglingTaskId() === task.id"
                     [attr.aria-busy]="togglingTaskId() === task.id ? 'true' : null"
                     [attr.aria-label]="task.done ? 'Desmarcar tarefa' : 'Marcar tarefa como concluida'"
@@ -195,6 +196,107 @@
       </section>
     </aside>
   </div>
+
+  @if (selectedTask(); as task) {
+    <div class="fixed inset-0 z-50 grid place-items-center bg-neutral-900/50 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="task-details-title">
+      <section class="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+        <header class="flex items-start justify-between gap-3 border-b border-neutral-200 px-4 py-3">
+          <div class="min-w-0">
+            <h2 id="task-details-title" class="truncate text-xl font-semibold text-neutral-800">{{ task.title }}</h2>
+            <p class="mt-1 text-sm text-neutral-500">{{ task.course }} - {{ task.deadlineLabel }}</p>
+          </div>
+          <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100" aria-label="Fechar" (click)="closeTaskDetails()">
+            <fa-icon [icon]="closeIcon"></fa-icon>
+          </button>
+        </header>
+
+        <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div class="grid gap-3 sm:grid-cols-3">
+            <article class="rounded-lg border border-neutral-200 p-3">
+              <p class="text-xs font-semibold uppercase text-neutral-400">Status</p>
+              <p class="mt-1 text-sm font-semibold text-neutral-800">{{ statusLabel(task.status) }}</p>
+            </article>
+            <article class="rounded-lg border border-neutral-200 p-3">
+              <p class="text-xs font-semibold uppercase text-neutral-400">Prioridade</p>
+              <span class="mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" [class]="priorityClass(task.priority)">
+                {{ task.priority }}
+              </span>
+            </article>
+            <article class="rounded-lg border border-neutral-200 p-3">
+              <p class="text-xs font-semibold uppercase text-neutral-400">Tempo estimado</p>
+              <p class="mt-1 text-sm font-semibold text-neutral-800">{{ formatHours(task.estimatedHours) }}</p>
+            </article>
+          </div>
+
+          <section class="mt-4">
+            <h3 class="text-sm font-semibold text-neutral-800">Descricao</h3>
+            <p class="mt-2 whitespace-pre-line rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
+              {{ task.description || 'Sem descricao cadastrada.' }}
+            </p>
+          </section>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <article class="rounded-lg border border-neutral-200 p-3">
+              <p class="text-xs font-semibold uppercase text-neutral-400">Prazo</p>
+              <p class="mt-1 text-sm text-neutral-700">{{ task.deadlineLabel }}</p>
+            </article>
+            <article class="rounded-lg border border-neutral-200 p-3">
+              <p class="text-xs font-semibold uppercase text-neutral-400">Recorrencia</p>
+              <p class="mt-1 text-sm text-neutral-700">{{ recurrenceLabel(task.recurrence) }}</p>
+            </article>
+            <article class="rounded-lg border border-neutral-200 p-3">
+              <p class="text-xs font-semibold uppercase text-neutral-400">Criada em</p>
+              <p class="mt-1 text-sm text-neutral-700">{{ formatDateTime(task.createdAt) }}</p>
+            </article>
+            <article class="rounded-lg border border-neutral-200 p-3">
+              <p class="text-xs font-semibold uppercase text-neutral-400">Atualizada em</p>
+              <p class="mt-1 text-sm text-neutral-700">{{ formatDateTime(task.updatedAt) }}</p>
+            </article>
+          </div>
+
+          @if (task.completedAt) {
+            <article class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+              <p class="text-xs font-semibold uppercase text-emerald-600">Concluida em</p>
+              <p class="mt-1 text-sm text-emerald-700">{{ formatDateTime(task.completedAt) }}</p>
+            </article>
+          }
+
+          <section class="mt-4">
+            <h3 class="text-sm font-semibold text-neutral-800">Tags</h3>
+            <div class="mt-2 flex flex-wrap gap-2">
+              @for (tag of task.tags; track tag) {
+                <span class="rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-700">{{ tag }}</span>
+              } @empty {
+                <span class="text-sm text-neutral-500">Nenhuma tag cadastrada.</span>
+              }
+            </div>
+          </section>
+        </div>
+
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-200 px-4 py-3">
+          @if (!task.done) {
+            <button
+              type="button"
+              class="rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-primary-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+              [disabled]="togglingTaskId() === task.id || deletingTaskId() === task.id"
+              (click)="completeSelectedTask(task.id)"
+            >
+              {{ togglingTaskId() === task.id ? 'Concluindo...' : 'Concluir' }}
+            </button>
+          }
+
+          <button
+            type="button"
+            class="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            [disabled]="deletingTaskId() === task.id || togglingTaskId() === task.id"
+            (click)="deleteSelectedTask(task.id)"
+          >
+            {{ deletingTaskId() === task.id ? 'Excluindo...' : 'Excluir' }}
+          </button>
+        </footer>
+      </section>
+    </div>
+  }
 
   @if (isCompletedModalOpen()) {
     <div class="fixed inset-0 z-50 grid place-items-center bg-neutral-900/50 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="completed-modal-title">

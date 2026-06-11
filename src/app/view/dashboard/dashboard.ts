@@ -20,6 +20,7 @@ type TaskStatus = 'pending' | 'completed' | 'overdue';
 interface StudyTask {
   id: string;
   title: string;
+  description: string | null;
   course: string;
   date: string;
   time: string | null;
@@ -27,6 +28,12 @@ interface StudyTask {
   priority: Priority;
   status: TaskStatus;
   done: boolean;
+  estimatedHours: number | null;
+  recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
+  tags: string[];
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface FocusItem {
@@ -51,11 +58,18 @@ interface TasksResponse {
   items: Array<{
     id: string;
     title: string;
+    description: string | null;
     course: string;
     dueDate: string;
     dueTime: string | null;
     status: TaskStatus;
     priority: Priority;
+    estimatedHours: number | null;
+    recurrence: 'none' | 'daily' | 'weekly' | 'monthly';
+    tags: string[];
+    completedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
   }>;
 }
 
@@ -98,6 +112,7 @@ export class Dashboard {
   readonly completedTasksError = signal('');
   readonly isCompletedModalOpen = signal(false);
   readonly isLoadingCompletedTasks = signal(false);
+  readonly selectedTask = signal<StudyTask | null>(null);
   readonly summary = signal<DashboardSummary['stats']>({
     todayTasks: 0,
     overdueTasks: 0,
@@ -107,10 +122,13 @@ export class Dashboard {
   readonly tasks = signal<StudyTask[]>([]);
   readonly focusItems = signal<FocusItem[]>([]);
   readonly togglingTaskId = signal<string | null>(null);
+  readonly deletingTaskId = signal<string | null>(null);
 
   readonly filteredTasks = computed(() => {
     const term = this.search().trim().toLowerCase();
-    const tasks = this.tasks();
+    const tasks = [...this.tasks()]
+      .filter((task) => !task.done)
+      .sort((left, right) => this.sortByDeadline(left, right));
 
     if (!term) {
       return tasks;
@@ -134,7 +152,7 @@ export class Dashboard {
 
   readonly pendingTasks = computed(() => this.tasks().filter((task) => !task.done));
   readonly lateTasks = computed(() => this.tasks().filter((task) => task.status === 'overdue'));
-  readonly tasksNext30Days = computed(() => this.tasks().filter((task) => !task.done && (task.status === 'overdue' || this.isWithinDays(task.date, 30))));
+  readonly tasksNext30Days = computed(() => this.tasks().filter((task) => !task.done && task.status !== 'overdue' && this.isWithinDays(task.date, 30)));
   readonly tasksNext7Days = computed(() => this.tasks().filter((task) => !task.done && (task.status === 'overdue' || (this.isWithinDays(task.date, 7) && task.status !== 'completed'))));
 
   readonly nextDeadlineDisplay = computed(() => {
@@ -209,6 +227,14 @@ export class Dashboard {
     this.isCompletedModalOpen.set(false);
   }
 
+  openTaskDetails(task: StudyTask): void {
+    this.selectedTask.set(task);
+  }
+
+  closeTaskDetails(): void {
+    this.selectedTask.set(null);
+  }
+
   async toggleTask(taskId: string): Promise<void> {
     const token = this.session.token();
     const currentTask = this.tasks().find((task) => task.id === taskId);
@@ -263,6 +289,72 @@ export class Dashboard {
     return 'bg-emerald-200 text-emerald-800';
   }
 
+  async completeSelectedTask(taskId: string): Promise<void> {
+    const token = this.session.token();
+    const currentTask = this.tasks().find((task) => task.id === taskId);
+
+    if (!token || !currentTask || currentTask.done) {
+      return;
+    }
+
+    this.togglingTaskId.set(taskId);
+    this.loadError.set('');
+
+    try {
+      const response = await apiFetch<ToggleTaskResponse>(`/tasks/${taskId}/status`, {
+        method: 'PATCH',
+        token,
+        body: JSON.stringify({ status: 'completed' }),
+      });
+
+      this.tasks.update((current) =>
+        current.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                status: response.status,
+                done: true,
+                completedAt: response.completedAt,
+              }
+            : task,
+        ),
+      );
+      this.selectedTask.set(null);
+      await this.refreshDashboardSummary();
+    } catch (error) {
+      this.loadError.set(getApiErrorMessage(error));
+    } finally {
+      this.togglingTaskId.set(null);
+    }
+  }
+
+  async deleteSelectedTask(taskId: string): Promise<void> {
+    const token = this.session.token();
+
+    if (!token) {
+      void this.router.navigate(['/login']);
+      return;
+    }
+
+    this.deletingTaskId.set(taskId);
+    this.loadError.set('');
+
+    try {
+      await apiFetch<void>(`/tasks/${taskId}`, {
+        method: 'DELETE',
+        token,
+      });
+
+      this.tasks.update((current) => current.filter((task) => task.id !== taskId));
+      this.selectedTask.set(null);
+      await this.refreshDashboardSummary();
+    } catch (error) {
+      this.loadError.set(getApiErrorMessage(error));
+    } finally {
+      this.deletingTaskId.set(null);
+    }
+  }
+
   statusLabel(status: TaskStatus): string {
     if (status === 'completed') {
       return 'concluida';
@@ -273,6 +365,46 @@ export class Dashboard {
     }
 
     return 'pendente';
+  }
+
+  recurrenceLabel(recurrence: StudyTask['recurrence']): string {
+    const labels: Record<StudyTask['recurrence'], string> = {
+      none: 'Nenhuma',
+      daily: 'Diaria',
+      weekly: 'Semanal',
+      monthly: 'Mensal',
+    };
+
+    return labels[recurrence];
+  }
+
+  formatHours(hours: number | null): string {
+    if (hours === null) {
+      return '-';
+    }
+
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+
+    if (minutes === 0) {
+      return `${wholeHours}h`;
+    }
+
+    return `${wholeHours}h ${minutes.toString().padStart(2, '0')}m`;
+  }
+
+  formatDateTime(value: string | null): string {
+    if (!value) {
+      return '-';
+    }
+
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(value));
   }
 
   focusClass(tone: 'amber' | 'cyan'): string {
@@ -397,6 +529,7 @@ export class Dashboard {
     return {
       id: task.id,
       title: task.title,
+      description: task.description,
       course: task.course,
       date: task.dueDate,
       time: task.dueTime,
@@ -404,6 +537,12 @@ export class Dashboard {
       priority: task.priority,
       status: this.resolveTaskStatus(task.status, task.dueDate, task.dueTime),
       done: task.status === 'completed',
+      estimatedHours: task.estimatedHours,
+      recurrence: task.recurrence,
+      tags: task.tags,
+      completedAt: task.completedAt,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
     };
   }
 
