@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
-import { faBell, faMoon, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faMoon } from '@fortawesome/free-solid-svg-icons';
 import { ThemeService } from '../../../services/theme.service';
 
 interface NotificationItem {
@@ -34,7 +34,6 @@ export class Topbar {
 
   readonly bellIcon = faBell;
   readonly moonIcon = faMoon;
-  readonly userIcon = faUser;
 
   onSearchInput(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -51,13 +50,13 @@ export class Topbar {
 
   notificationPriorityClass(priority: string): string {
     if (priority === 'alta') {
-      return 'bg-red-100 text-red-700';
+      return 'border border-red-200 bg-red-100 text-red-800';
     }
 
     if (priority === 'media') {
-      return 'bg-amber-100 text-amber-700';
+      return 'border border-amber-200 bg-amber-100 text-amber-800';
     }
 
-    return 'bg-emerald-100 text-emerald-700';
+    return 'border border-emerald-200 bg-emerald-100 text-emerald-800';
   }
 }

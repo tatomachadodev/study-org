@@ -281,12 +281,12 @@ export class Dashboard {
 
   priorityClass(priority: Priority): string {
     if (priority === 'alta') {
-      return 'bg-red-500 text-white';
+      return 'border border-red-200 bg-red-100 text-red-800';
     }
     if (priority === 'media') {
-      return 'bg-neutral-300 text-neutral-700';
+      return 'border border-amber-200 bg-amber-100 text-amber-800';
     }
-    return 'bg-emerald-200 text-emerald-800';
+    return 'border border-emerald-200 bg-emerald-100 text-emerald-800';
   }
 
   async completeSelectedTask(taskId: string): Promise<void> {
@@ -378,13 +378,15 @@ export class Dashboard {
     return labels[recurrence];
   }
 
-  formatHours(hours: number | null): string {
-    if (hours === null) {
+  formatHours(hours: number | string | null | undefined): string {
+    const parsedHours = this.parseHours(hours);
+
+    if (parsedHours === null) {
       return '-';
     }
 
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
+    const wholeHours = Math.floor(parsedHours);
+    const minutes = Math.round((parsedHours - wholeHours) * 60);
 
     if (minutes === 0) {
       return `${wholeHours}h`;
@@ -473,13 +475,15 @@ export class Dashboard {
     }).format(new Date(value));
   }
 
-  formatCompletedDuration(hours: number | null): string {
-    if (hours === null) {
+  formatCompletedDuration(hours: number | string | null | undefined): string {
+    const parsedHours = this.parseHours(hours);
+
+    if (parsedHours === null) {
       return '-';
     }
 
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
+    const wholeHours = Math.floor(parsedHours);
+    const minutes = Math.round((parsedHours - wholeHours) * 60);
     return `${wholeHours}h ${minutes.toString().padStart(2, '0')}m`;
   }
 
@@ -600,5 +604,18 @@ export class Dashboard {
 
   private startOfTodayUtc(): number {
     return Date.parse(`${this.formatDateOnly(new Date())}T00:00:00Z`);
+  }
+
+  private parseHours(value: number | string | null | undefined): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      const parsedValue = Number(value.replace(',', '.'));
+      return Number.isFinite(parsedValue) ? parsedValue : null;
+    }
+
+    return null;
   }
 }

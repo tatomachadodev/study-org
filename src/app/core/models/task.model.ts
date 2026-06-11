@@ -32,7 +32,7 @@ export interface CompletedTasksResponse {
     title: string;
     course: string;
     completedAt: string;
-    durationHours: number;
+    durationHours: number | null;
     priority: TaskPriority;
   }>;
 }

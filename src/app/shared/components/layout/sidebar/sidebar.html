@@ -7,32 +7,32 @@
   </div>
 
   <nav class="flex-1 space-y-1 p-3 text-sm text-neutral-700">
-    <a routerLink="/dashboard" routerLinkActive="bg-neutral-200 font-semibold" class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-neutral-100">
-      <fa-icon [icon]="dashboardIcon"></fa-icon>
-      Dashboard
+    <a routerLink="/dashboard" routerLinkActive="bg-neutral-200 font-semibold" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-neutral-100">
+      <fa-icon [icon]="dashboardIcon" class="w-5 text-center"></fa-icon>
+      <span>Dashboard</span>
     </a>
-    <a routerLink="/tasks" routerLinkActive="bg-neutral-200 font-semibold" class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-neutral-100">
-      <fa-icon [icon]="createTaskIcon"></fa-icon>
-      Criar Tarefa
+    <a routerLink="/tasks" routerLinkActive="bg-neutral-200 font-semibold" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-neutral-100">
+      <fa-icon [icon]="createTaskIcon" class="w-5 text-center"></fa-icon>
+      <span>Criar Tarefa</span>
     </a>
-    <a routerLink="/calendar" routerLinkActive="bg-neutral-200 font-semibold" class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-neutral-100">
-      <fa-icon [icon]="calendarIcon"></fa-icon>
-      Calendario
+    <a routerLink="/calendar" routerLinkActive="bg-neutral-200 font-semibold" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-neutral-100">
+      <fa-icon [icon]="calendarIcon" class="w-5 text-center"></fa-icon>
+      <span>Calendario</span>
     </a>
-    <a routerLink="/completed" routerLinkActive="bg-neutral-200 font-semibold" class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-neutral-100">
-      <fa-icon [icon]="completedIcon"></fa-icon>
-      Concluidas
+    <a routerLink="/completed" routerLinkActive="bg-neutral-200 font-semibold" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-neutral-100">
+      <fa-icon [icon]="completedIcon" class="w-5 text-center"></fa-icon>
+      <span>Concluidas</span>
     </a>
-    <a routerLink="/settings" routerLinkActive="bg-neutral-200 font-semibold" class="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-neutral-100">
-      <fa-icon [icon]="settingsIcon"></fa-icon>
-      Configuracoes
+    <a routerLink="/settings" routerLinkActive="bg-neutral-200 font-semibold" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-neutral-100">
+      <fa-icon [icon]="settingsIcon" class="w-5 text-center"></fa-icon>
+      <span>Configuracoes</span>
     </a>
   </nav>
 
   <div class="border-t border-neutral-200 p-3">
-    <button type="button" class="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-400">
-      <fa-icon [icon]="logoutIcon"></fa-icon>
-      Sair
+    <button type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 hover:text-red-700" (click)="logout()">
+      <fa-icon [icon]="logoutIcon" class="w-5 text-center"></fa-icon>
+      <span>Sair</span>
     </button>
   </div>
 </aside>

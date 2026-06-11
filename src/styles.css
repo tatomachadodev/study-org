@@ -64,6 +64,26 @@ body {
     background-color: #15291f;
 }
 
+.dark .bg-primary-500 {
+    background-color: #115e59;
+}
+
+.dark .hover\:bg-primary-500\/80:hover {
+    background-color: #134e4a;
+}
+
+.dark .bg-primary-500\/20 {
+    background-color: rgba(20, 184, 166, 0.18);
+}
+
+.dark .border-primary-500 {
+    border-color: #2dd4bf;
+}
+
+.dark .focus\:border-primary-500:focus {
+    border-color: #2dd4bf;
+}
+
 .dark .border-neutral-200,
 .dark .border-neutral-300 {
     border-color: #273349;
@@ -72,6 +92,10 @@ body {
 .dark .border-cyan-100,
 .dark .border-cyan-200 {
     border-color: #2a4f67;
+}
+
+.dark .hover\:border-cyan-400:hover {
+    border-color: #67e8f9;
 }
 
 .dark .border-amber-100,
@@ -104,17 +128,97 @@ body {
     color: #94a3b8;
 }
 
+.dark .text-primary-500 {
+    color: #67e8f9;
+}
+
 .dark .text-cyan-800 {
     color: #9bdcff;
 }
 
+.dark .text-cyan-700,
+.dark .text-cyan-900 {
+    color: #bae6fd;
+}
+
+.dark .text-amber-700,
+.dark .text-amber-800 {
+    color: #f8d38d;
+}
+
 .dark .text-red-600,
-.dark .text-red-700 {
+.dark .text-red-700,
+.dark .text-red-800 {
     color: #ffb4c4;
+}
+
+.dark .text-red-500 {
+    color: #fda4af;
 }
 
 .dark .text-emerald-700 {
     color: #9fe4c6;
+}
+
+.dark .text-emerald-800 {
+    color: #a7f3d0;
+}
+
+.dark .bg-cyan-100,
+.dark .bg-cyan-200 {
+    background-color: #123447;
+}
+
+.dark .hover\:bg-cyan-100:hover,
+.dark .hover\:bg-cyan-200:hover {
+    background-color: #16445e;
+}
+
+.dark .hover\:text-cyan-900:hover {
+    color: #e0f2fe;
+}
+
+.dark .bg-red-100,
+.dark .bg-red-200 {
+    background-color: #3a1724;
+}
+
+.dark .bg-amber-100,
+.dark .bg-amber-200 {
+    background-color: #3b2a12;
+}
+
+.dark .bg-emerald-100,
+.dark .bg-emerald-200 {
+    background-color: #143525;
+}
+
+.dark .bg-red-500 {
+    background-color: #dc2626;
+}
+
+.dark .hover\:bg-red-50:hover {
+    background-color: #3a1724;
+}
+
+.dark .hover\:bg-neutral-50:hover,
+.dark .hover\:bg-neutral-100:hover {
+    background-color: #1f2d44;
+}
+
+.dark .hover\:bg-white\/80:hover {
+    background-color: rgba(22, 33, 52, 0.8);
+}
+
+.dark .hover\:bg-white\/40:hover {
+    background-color: rgba(22, 33, 52, 0.4);
+}
+
+.dark .shadow-xl,
+.dark .shadow-2xl,
+.dark .shadow-md,
+.dark .shadow-sm {
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
 }
 
 .dark input,
@@ -127,4 +231,8 @@ body {
 
 .dark input::placeholder {
     color: #64748b;
+}
+
+.dark button:disabled {
+    opacity: 0.55;
 }
