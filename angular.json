@@ -65,7 +65,10 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
-          "options": {"poll": 2000},
+          "options": {
+            "poll": 2000,
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": {
               "buildTarget": "study-org:build:production"
