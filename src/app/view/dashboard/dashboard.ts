@@ -120,12 +120,17 @@ export class Dashboard {
       return (
         task.title.toLowerCase().includes(term) ||
         task.course.toLowerCase().includes(term) ||
-        task.deadlineLabel.toLowerCase().includes(term)
+        task.deadlineLabel.toLowerCase().includes(term) ||
+        task.priority.toLowerCase().includes(term) ||
+        task.status.toLowerCase().includes(term) ||
+        task.date.includes(term) ||
+        this.statusLabel(task.status).toLowerCase().includes(term)
       );
     });
   });
 
   readonly visibleTasks = computed(() => this.filteredTasks().slice(0, 5));
+  readonly hasHiddenFilteredTasks = computed(() => this.filteredTasks().length > this.visibleTasks().length);
 
   readonly pendingTasks = computed(() => this.tasks().filter((task) => !task.done));
   readonly lateTasks = computed(() => this.tasks().filter((task) => task.status === 'overdue'));
@@ -256,6 +261,18 @@ export class Dashboard {
       return 'bg-neutral-300 text-neutral-700';
     }
     return 'bg-emerald-200 text-emerald-800';
+  }
+
+  statusLabel(status: TaskStatus): string {
+    if (status === 'completed') {
+      return 'concluida';
+    }
+
+    if (status === 'overdue') {
+      return 'em atraso';
+    }
+
+    return 'pendente';
   }
 
   focusClass(tone: 'amber' | 'cyan'): string {

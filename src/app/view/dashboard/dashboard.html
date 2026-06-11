@@ -56,8 +56,20 @@
       </div>
 
       <section class="mt-5 rounded-2xl border border-neutral-200 bg-white">
-        <div class="border-b border-neutral-200 px-4 py-3">
-          <h2 class="text-2xl font-bold text-neutral-800">Minha Lista de Estudo</h2>
+        <div class="flex flex-col gap-1 border-b border-neutral-200 px-4 py-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 class="text-2xl font-bold text-neutral-800">Minha Lista de Estudo</h2>
+            @if (search().trim()) {
+              <p class="text-sm text-neutral-500">
+                {{ filteredTasks().length }} resultado(s) para "{{ search().trim() }}"
+              </p>
+            }
+          </div>
+          @if (filteredTasks().length > 0) {
+            <p class="text-sm text-neutral-500">
+              Mostrando {{ visibleTasks().length }} de {{ filteredTasks().length }}
+            </p>
+          }
         </div>
 
         <div class="divide-y divide-neutral-200">
@@ -109,6 +121,12 @@
             }
           }
         </div>
+
+        @if (hasHiddenFilteredTasks()) {
+          <p class="border-t border-neutral-200 px-4 py-2 text-center text-xs text-neutral-500">
+            Existem mais tarefas nesse resultado. Refine a busca para encontrar uma atividade especifica.
+          </p>
+        }
 
         <button type="button" class="w-full border-t border-neutral-200 px-4 py-3 text-center text-sm text-neutral-500 hover:text-primary-500" (click)="openCompletedTasksModal()">
           Ver lista de tarefas concluidas
