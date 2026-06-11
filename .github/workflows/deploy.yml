@@ -1,9 +1,9 @@
-name: Deploy em Produção
+name: Deploy em Producao
 
 on:
   push:
     branches:
-      - main # dispara somente quando o push vai para a main
+      - main
 
 jobs:
   deploy:
@@ -18,16 +18,20 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -e
+
             cd ~/study-org
 
-            echo "📥 Atualizando código..."
-            git pull origin main
+            echo "Atualizando codigo..."
+            git fetch origin main
+            git checkout main
+            git reset --hard origin/main
 
-            echo "🐳 Reconstruindo containers..."
+            echo "Reconstruindo containers..."
             docker compose up -d --build
 
-            echo "🧹 Limpando imagens antigas..."
+            echo "Limpando imagens antigas..."
             docker image prune -f
 
-            echo "✅ Deploy concluído!"
+            echo "Deploy concluido!"
             docker compose ps
