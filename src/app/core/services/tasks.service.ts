@@ -42,4 +42,8 @@ export class TasksService {
   getCompletedTasks(): Observable<CompletedTasksResponse> {
     return this.http.get<CompletedTasksResponse>(`${API_BASE_URL}/tasks/completed`);
   }
+
+  clearCompletedTasks(): Observable<{ deleted: number }> {
+    return this.http.delete<{ deleted: number }>(`${API_BASE_URL}/tasks/completed`);
+  }
 }

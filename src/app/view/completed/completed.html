@@ -10,9 +10,14 @@
           <fa-icon [icon]="downloadIcon"></fa-icon>
           <span class="ml-1">Exportar Log</span>
         </button>
-        <button type="button" class="rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-neutral-900 hover:bg-primary-500/80">
+        <button
+          type="button"
+          class="rounded-lg bg-primary-500 px-3 py-2 text-sm font-semibold text-neutral-900 hover:bg-primary-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="isClearing() || totalCompleted() === 0"
+          (click)="clearCompletedTasks()"
+        >
           <fa-icon [icon]="broomIcon"></fa-icon>
-          <span class="ml-1">Limpeza Automatica</span>
+          <span class="ml-1">{{ isClearing() ? 'Limpando...' : 'Limpar' }}</span>
         </button>
       </div>
     </div>
@@ -34,6 +39,10 @@
 
     @if (errorMessage()) {
       <p class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{ errorMessage() }}</p>
+    }
+
+    @if (successMessage()) {
+      <p class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ successMessage() }}</p>
     }
 
     <div class="mt-4 rounded-2xl border border-neutral-200 bg-white">

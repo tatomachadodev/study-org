@@ -27,7 +27,9 @@ export class Completed {
 
   readonly search = signal('');
   readonly isLoading = signal(true);
+  readonly isClearing = signal(false);
   readonly errorMessage = signal('');
+  readonly successMessage = signal('');
   readonly tasks = signal<CompletedTaskView[]>([]);
 
   readonly filteredTasks = computed(() => {
@@ -59,6 +61,29 @@ export class Completed {
     this.search.set(value);
   }
 
+  clearCompletedTasks(): void {
+    if (this.tasks().length === 0 || this.isClearing()) {
+      return;
+    }
+
+    this.isClearing.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    this.tasksService
+      .clearCompletedTasks()
+      .pipe(finalize(() => this.isClearing.set(false)))
+      .subscribe({
+        next: (response) => {
+          this.tasks.set([]);
+          this.successMessage.set(`${response.deleted} tarefa(s) concluida(s) removida(s).`);
+        },
+        error: () => {
+          this.errorMessage.set('Nao foi possivel limpar as tarefas concluidas.');
+        },
+      });
+  }
+
   priorityClass(priority: TaskPriority): string {
     if (priority === 'alta') {
       return 'border border-red-200 bg-red-100 text-red-800';
@@ -72,6 +97,7 @@ export class Completed {
   private loadCompletedTasks(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');
+    this.successMessage.set('');
 
     this.tasksService
       .getCompletedTasks()
