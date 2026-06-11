@@ -8,6 +8,7 @@ import {
   faCheck,
   faClock,
   faPlus,
+  faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { AppLayout } from '../../shared/components/layout/app-layout/app-layout';
 import { apiFetch, getApiErrorMessage } from '../../shared/services/api.service';
@@ -64,6 +65,19 @@ interface ToggleTaskResponse {
   completedAt: string | null;
 }
 
+interface CompletedTask {
+  id: string;
+  title: string;
+  course: string;
+  completedAt: string;
+  durationHours: number | null;
+  priority: Priority;
+}
+
+interface CompletedTasksResponse {
+  items: CompletedTask[];
+}
+
 @Component({
   selector: 'app-dashboard',
   imports: [FontAwesomeModule, AppLayout],
@@ -80,6 +94,10 @@ export class Dashboard {
   readonly hoveredTaskId = signal<string | null>(null);
   readonly isLoading = signal(false);
   readonly loadError = signal('');
+  readonly completedTasks = signal<CompletedTask[]>([]);
+  readonly completedTasksError = signal('');
+  readonly isCompletedModalOpen = signal(false);
+  readonly isLoadingCompletedTasks = signal(false);
   readonly summary = signal<DashboardSummary['stats']>({
     todayTasks: 0,
     overdueTasks: 0,
@@ -106,6 +124,8 @@ export class Dashboard {
       );
     });
   });
+
+  readonly visibleTasks = computed(() => this.filteredTasks().slice(0, 5));
 
   readonly pendingTasks = computed(() => this.tasks().filter((task) => !task.done));
   readonly lateTasks = computed(() => this.tasks().filter((task) => task.status === 'overdue'));
@@ -158,6 +178,7 @@ export class Dashboard {
   readonly deadlineIcon = faCalendarCheck;
   readonly chartIcon = faChartLine;
   readonly checkIcon = faCheck;
+  readonly closeIcon = faXmark;
 
   constructor() {
     void this.loadDashboard();
@@ -169,6 +190,18 @@ export class Dashboard {
 
   openCreateTask(): void {
     void this.router.navigate(['/tasks']);
+  }
+
+  openCompletedTasksModal(): void {
+    this.isCompletedModalOpen.set(true);
+
+    if (this.completedTasks().length === 0) {
+      void this.loadCompletedTasks();
+    }
+  }
+
+  closeCompletedTasksModal(): void {
+    this.isCompletedModalOpen.set(false);
   }
 
   async toggleTask(taskId: string): Promise<void> {
@@ -196,7 +229,7 @@ export class Dashboard {
           task.id === taskId
             ? {
                 ...task,
-                status: response.status,
+                status: this.resolveTaskStatus(response.status, task.date, task.time),
                 done: response.status === 'completed',
               }
             : task,
@@ -283,6 +316,24 @@ export class Dashboard {
     }
   }
 
+  formatCompletedDate(value: string): string {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date(value));
+  }
+
+  formatCompletedDuration(hours: number | null): string {
+    if (hours === null) {
+      return '-';
+    }
+
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    return `${wholeHours}h ${minutes.toString().padStart(2, '0')}m`;
+  }
+
   private async refreshDashboardSummary(): Promise<void> {
     const token = this.session.token();
 
@@ -304,19 +355,28 @@ export class Dashboard {
     }
   }
 
-  private toStudyTask(task: TasksResponse['items'][number]): StudyTask {
-    // Recalculate status based on date if not completed
-    let status = task.status;
-    if (task.status !== 'completed') {
-      const dueDate = Date.parse(`${task.dueDate}T${task.dueTime ?? '23:59'}:00Z`);
-      const now = Date.now();
-      if (dueDate < now) {
-        status = 'overdue';
-      } else {
-        status = 'pending';
-      }
+  private async loadCompletedTasks(): Promise<void> {
+    const token = this.session.token();
+
+    if (!token) {
+      void this.router.navigate(['/login']);
+      return;
     }
 
+    this.isLoadingCompletedTasks.set(true);
+    this.completedTasksError.set('');
+
+    try {
+      const response = await apiFetch<CompletedTasksResponse>('/tasks/completed', { token });
+      this.completedTasks.set(response.items);
+    } catch (error) {
+      this.completedTasksError.set(getApiErrorMessage(error));
+    } finally {
+      this.isLoadingCompletedTasks.set(false);
+    }
+  }
+
+  private toStudyTask(task: TasksResponse['items'][number]): StudyTask {
     return {
       id: task.id,
       title: task.title,
@@ -325,9 +385,18 @@ export class Dashboard {
       time: task.dueTime,
       deadlineLabel: this.formatDeadlineLabel(task.dueDate, task.dueTime),
       priority: task.priority,
-      status,
+      status: this.resolveTaskStatus(task.status, task.dueDate, task.dueTime),
       done: task.status === 'completed',
     };
+  }
+
+  private resolveTaskStatus(status: TaskStatus, date: string, time: string | null): TaskStatus {
+    if (status === 'completed') {
+      return status;
+    }
+
+    const dueDate = Date.parse(`${date}T${time ?? '23:59'}:00Z`);
+    return dueDate < Date.now() ? 'overdue' : 'pending';
   }
 
   private isWithinDays(date: string, days: number): boolean {

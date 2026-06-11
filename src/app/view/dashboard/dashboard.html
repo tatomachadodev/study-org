@@ -1,4 +1,4 @@
-<app-layout [searchValue]="search()" [notificationCount]="tasksNext7Days().length" (searchValueChange)="updateSearch($event)">
+<app-layout [searchValue]="search()" [notificationCount]="tasksNext7Days().length" [notificationItems]="tasksNext7Days()" (searchValueChange)="updateSearch($event)">
   @if (loadError()) {
     <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
       {{ loadError() }}
@@ -64,7 +64,7 @@
           @if (isLoading()) {
             <p class="px-4 py-6 text-center text-neutral-500">Carregando tarefas do backend...</p>
           } @else {
-            @for (task of filteredTasks(); track task.id) {
+            @for (task of visibleTasks(); track task.id) {
               <article
                 class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 (mouseenter)="setHoveredTask(task.id)"
@@ -110,9 +110,9 @@
           }
         </div>
 
-        <div class="border-t border-neutral-200 px-4 py-3 text-center text-sm text-neutral-500 cursor-pointer hover:text-primary-500">
+        <button type="button" class="w-full border-t border-neutral-200 px-4 py-3 text-center text-sm text-neutral-500 hover:text-primary-500" (click)="openCompletedTasksModal()">
           Ver lista de tarefas concluidas
-        </div>
+        </button>
       </section>
     </div>
 
@@ -177,4 +177,50 @@
       </section>
     </aside>
   </div>
+
+  @if (isCompletedModalOpen()) {
+    <div class="fixed inset-0 z-50 grid place-items-center bg-neutral-900/50 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="completed-modal-title">
+      <section class="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+        <header class="flex items-center justify-between gap-3 border-b border-neutral-200 px-4 py-3">
+          <div>
+            <h2 id="completed-modal-title" class="text-lg font-semibold text-neutral-800">Tarefas Concluidas</h2>
+            <p class="text-sm text-neutral-500">Historico de atividades finalizadas.</p>
+          </div>
+          <button type="button" class="grid h-9 w-9 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100" aria-label="Fechar" (click)="closeCompletedTasksModal()">
+            <fa-icon [icon]="closeIcon"></fa-icon>
+          </button>
+        </header>
+
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          @if (completedTasksError()) {
+            <p class="m-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{ completedTasksError() }}</p>
+          }
+
+          @if (isLoadingCompletedTasks()) {
+            <p class="px-4 py-8 text-center text-sm text-neutral-500">Carregando tarefas concluidas...</p>
+          } @else {
+            <div class="divide-y divide-neutral-200">
+              @for (task of completedTasks(); track task.id) {
+                <article class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-neutral-800">{{ task.title }}</p>
+                    <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                      <span class="rounded-full bg-cyan-100 px-2 py-0.5 font-semibold text-cyan-800">{{ task.course }}</span>
+                      <span>{{ formatCompletedDate(task.completedAt) }}</span>
+                      <span>{{ formatCompletedDuration(task.durationHours) }}</span>
+                    </div>
+                  </div>
+                  <span class="inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" [class]="priorityClass(task.priority)">
+                    {{ task.priority }}
+                  </span>
+                </article>
+              } @empty {
+                <p class="px-4 py-8 text-center text-sm text-neutral-500">Nenhuma tarefa concluida encontrada.</p>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  }
 </app-layout>
