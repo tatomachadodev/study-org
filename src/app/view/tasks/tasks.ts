@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
@@ -76,13 +83,16 @@ export class Tasks {
   readonly selectedTags = signal<string[]>(['Provas', 'Urgente']);
   readonly formIsValid = signal(false);
 
+  readonly date = new Date();
+  readonly minDate = this.formatDate(this.date);
+
   readonly taskForm = this.formBuilder.nonNullable.group({
     title: ['', [Validators.required, Validators.minLength(4)]],
     description: [''],
     course: ['', [Validators.required, Validators.minLength(2)]],
     priority: ['media' as Priority, [Validators.required]],
-    dueDate: ['2026-04-25', [Validators.required]],
-    dueTime: ['14:00'],
+    dueDate: [this.minDate, [Validators.required]],
+    dueTime: [this.formatTime(this.date)],
     estimatedHours: ['2.5', [Validators.pattern(/^(?:\d+|\d+[.,]\d+)$/)]],
     recurrence: ['none' as Recurrence, [Validators.required]],
     newTag: [''],
@@ -104,6 +114,21 @@ export class Tasks {
       });
 
     void this.loadRecentTasks();
+  }
+
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  }
+
+  private formatTime(date: Date): string {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    return `${hours}:${minutes}`;
   }
 
   updateSearch(value: string): void {

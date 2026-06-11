@@ -203,7 +203,7 @@ export class Dashboard {
         ),
       );
       // Recarrega o resumo para atualizar cartões e estatísticas
-      await this.loadDashboard();
+      await this.refreshDashboardSummary();
     } catch (error) {
       this.loadError.set(getApiErrorMessage(error));
     } finally {
@@ -280,6 +280,27 @@ export class Dashboard {
       this.loadError.set(getApiErrorMessage(error));
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  private async refreshDashboardSummary(): Promise<void> {
+    const token = this.session.token();
+
+    if (!token) {
+      void this.router.navigate(['/login']);
+      return;
+    }
+
+    this.loadError.set('');
+
+    try {
+      const summary = await apiFetch<DashboardSummary>('/dashboard/summary', { token });
+
+      this.userName.set(summary.userName);
+      this.summary.set(summary.stats);
+      this.focusItems.set(summary.focusItems);
+    } catch (error) {
+      this.loadError.set(getApiErrorMessage(error));
     }
   }
 

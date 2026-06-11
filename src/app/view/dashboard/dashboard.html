@@ -16,13 +16,13 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-3">
         <article class="rounded-xl border border-neutral-200 bg-white p-4">
           <div class="mb-2 flex items-center gap-3 text-neutral-500">
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-cyan-100 text-primary-500">
               <fa-icon [icon]="clockIcon"></fa-icon>
             </span>
-            <span class="text-sm">Tarefas Proximos 30 Dias</span>
+            <span class="text-sm">Em 30 Dias</span>
           </div>
           <p class="text-3xl font-bold text-neutral-800">{{ tasksNext30Days().length }}</p>
         </article>
@@ -35,16 +35,6 @@
             <span class="text-sm">Em Atraso</span>
           </div>
           <p class="text-3xl font-bold text-neutral-800">{{ lateTasks().length }}</p>
-        </article>
-
-        <article class="rounded-xl border border-neutral-200 bg-white p-4">
-          <div class="mb-2 flex items-center gap-3 text-neutral-500">
-            <span class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-100 text-neutral-600">
-              <fa-icon [icon]="calendarIcon"></fa-icon>
-            </span>
-            <span class="text-sm">Proximo Prazo</span>
-          </div>
-          <p class="text-3xl font-bold text-neutral-800">{{ nextDeadlineDisplay() }}</p>
         </article>
 
         <article class="rounded-xl border border-neutral-200 bg-white p-4">
